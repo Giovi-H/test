@@ -5,7 +5,7 @@ import { useProfile } from 'utils/ProfileContext';
 import { Colors } from 'utils/colors';
 
 type Props = {
-  activeTab?: 'home' | 'explore' | 'leaderboard' | 'feed' | 'profile';
+  activeTab?: 'home' | 'explore' | 'leaderboard' | 'feed' | 'profile' | 'add';
   backgroundColor?: string;
 };
 

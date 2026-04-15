@@ -5,7 +5,7 @@ export default function GridBackground(props: { color1: string; color2: string }
   const { color1, color2 } = props;
   const { width, height } = useWindowDimensions();
 
-  const columns = 4;
+  const columns = 8;
   const lineWidth = 3;
 
   // Calculate grid size based on screen width
@@ -22,7 +22,7 @@ export default function GridBackground(props: { color1: string; color2: string }
       {/* Grid lines */}
       <View style={StyleSheet.absoluteFillObject}>
         {/* Vertical lines - always 5 lines for 4 columns */}
-        {Array.from({ length: 5 }).map((_, i) => (
+        {Array.from({ length: columns + 1 }).map((_, i) => (
           <View
             key={`v-${i}`}
             style={[
