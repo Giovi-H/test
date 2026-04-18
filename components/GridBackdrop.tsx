@@ -5,7 +5,7 @@ export default function GridBackground(props: { color1: string; color2: string }
   const { color1, color2 } = props;
   const { width, height } = useWindowDimensions();
 
-  const columns = 8;
+  const columns = 10;
   const lineWidth = 3;
 
   // Calculate grid size based on screen width

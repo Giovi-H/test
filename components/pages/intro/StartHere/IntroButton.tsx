@@ -15,7 +15,7 @@ export default function IntroButton({ variant }: Props) {
 
   const handlePress = () => {
     if (isLogin) {
-      router.push('/login');
+      router.push('/intro/login');
     } else {
       router.push('/intro/survey');
     }

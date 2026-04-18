@@ -1,8 +1,10 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFonts, Caveat_700Bold, Caveat_400Regular } from '@expo-google-fonts/caveat';
 import CupLogo from 'components/pages/intro/StartHere/svgs/CupLogo';
 import LogoText from 'components/pages/intro/StartHere/svgs/LogoText';
+import GridBackground from 'components/GridBackdrop';
+import { Colors } from 'utils/colors';
 import { useState } from 'react';
 
 export default function Login() {
@@ -13,91 +15,99 @@ export default function Login() {
   if (!fontsLoaded) return null;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.logoSection}>
-        <CupLogo />
-        <LogoText />
-      </View>
+    <>
+      <GridBackground color1={Colors.blue} color2="#4b5a9c" />
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.logoSection}>
+          <CupLogo />
+          <LogoText />
+        </View>
 
-      <View style={styles.card}>
-        <Text style={[styles.welcomeTitle, { fontFamily: 'Caveat_700Bold' }]}>
-          Welcome back!
-        </Text>
-        <Text style={[styles.welcomeSubtitle, { fontFamily: 'Caveat_400Regular' }]}>
-          Let's explore some cafes :)
-        </Text>
+        <View style={styles.card}>
+          <Text style={[styles.welcomeTitle, { fontFamily: 'Caveat_700Bold' }]}>
+            Welcome back!
+          </Text>
+          <Text style={[styles.welcomeSubtitle, { fontFamily: 'Caveat_400Regular' }]}>
+            Let's explore some cafes :)
+          </Text>
 
-        <TextInput
-          placeholder="enter your email"
-          placeholderTextColor="#aaa"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          style={[styles.input, { fontFamily: 'Caveat_400Regular' }]}
-        />
-
-        <View style={styles.passwordRow}>
           <TextInput
-            placeholder="enter your password"
+            placeholder="enter your email"
             placeholderTextColor="#aaa"
-            secureTextEntry={!showPassword}
-            style={[styles.inputInner, { fontFamily: 'Caveat_400Regular' }]}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            style={[styles.input, { fontFamily: 'Caveat_400Regular' }]}
           />
-          <TouchableOpacity
-            onPress={() => setShowPassword(!showPassword)}
-            style={styles.eyeButton}
-          >
-            <Text style={{ fontSize: 16 }}>{showPassword ? '🙈' : '👁️'}</Text>
+
+          <View style={styles.passwordRow}>
+            <TextInput
+              placeholder="enter your password"
+              placeholderTextColor="#aaa"
+              secureTextEntry={!showPassword}
+              style={[styles.inputInner, { fontFamily: 'Caveat_400Regular' }]}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeButton}
+            >
+              <Text style={{ fontSize: 16 }}>{showPassword ? '🙈' : '👁️'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity>
+            <Text style={[styles.forgotPassword, { fontFamily: 'Caveat_400Regular' }]}>
+              forgot your password?
+            </Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity>
-          <Text style={[styles.forgotPassword, { fontFamily: 'Caveat_400Regular' }]}>
-            forgot your password?
+        <View style={styles.card}>
+          <Text style={[styles.orText, { fontFamily: 'Caveat_400Regular' }]}>
+            —or log in with—
           </Text>
-        </TouchableOpacity>
-      </View>
+          <View style={styles.socialRow}>
+            <TouchableOpacity style={styles.socialButton}>
+              <Text style={{ fontSize: 28 }}>G</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton}>
+              <Text style={{ fontSize: 28 }}>🍎</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
-      <View style={styles.card}>
-        <Text style={[styles.orText, { fontFamily: 'Caveat_400Regular' }]}>
-          —or log in with—
-        </Text>
-        <View style={styles.socialRow}>
-          <TouchableOpacity style={styles.socialButton}>
-            <Text style={{ fontSize: 28 }}>G</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButton}>
-            <Text style={{ fontSize: 28 }}>🍎</Text>
+        <View style={styles.registerRow}>
+          <Text style={[styles.registerText, { fontFamily: 'Caveat_400Regular' }]}>
+            don't have an account?{' '}
+          </Text>
+          <TouchableOpacity onPress={() => router.push('/intro/survey')}>
+            <Text style={[styles.registerLink, { fontFamily: 'Caveat_700Bold' }]}>
+              register now
+            </Text>
           </TouchableOpacity>
         </View>
-      </View>
-
-      <View style={styles.registerRow}>
-        <Text style={[styles.registerText, { fontFamily: 'Caveat_400Regular' }]}>
-          don't have an account?{' '}
-        </Text>
-        <TouchableOpacity onPress={() => router.push('/intro/survey')}>
-          <Text style={[styles.registerLink, { fontFamily: 'Caveat_700Bold' }]}>
-            register now
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      </ScrollView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#3A4B94',
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
-    gap: 16,
+    paddingVertical: 15,
+    gap: 15,
   },
   logoSection: {
     alignItems: 'center',
     gap: 4,
-    marginBottom: 8,
+    marginBottom: -60,
+    transform: [{ scale: 0.7 }],
   },
   card: {
     backgroundColor: '#FFFFFF',
