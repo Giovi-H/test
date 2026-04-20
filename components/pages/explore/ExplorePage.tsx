@@ -145,7 +145,7 @@ export default function ExplorePage() {
     return () => clearTimeout(timeout);
   }, [locationQuery]);
 
-  const filteredCafes = nearbyCafes
+  const filteredCafes = (nearbyCafes ?? [])
     .filter(cafe =>
       activeFilter === 'saved' ? savedCafes.includes(cafe.fsq_place_id) : true
     )
@@ -195,6 +195,11 @@ export default function ExplorePage() {
     [closeOverlay]
   );
 
+  const handleSearchBarPress = useCallback(() => {
+    console.log('search bar pressed, switching to map');
+    commitLocation(40.7128, -74.006, 'NYC, NY');
+  }, [commitLocation]);
+
   const handleLocationSearch = useCallback(async () => {
     if (!locationQuery.trim()) return;
     Keyboard.dismiss();
@@ -233,7 +238,6 @@ export default function ExplorePage() {
   }, [commitLocation]);
 
   const handlePinPress = useCallback(async (cafe: any) => {
-    console.log('Pin pressed:', cafe.name);
     if (!cafe.latitude || !cafe.longitude) return;
     setSelectedCafe(cafe);
     setSelectedCafeRating(null);
@@ -301,7 +305,7 @@ export default function ExplorePage() {
           bottomSheetRef={bottomSheetRef}
           mapRegion={mapRegion}
           snapPoints={snapPoints}
-          nearbyCafes={nearbyCafes}
+          nearbyCafes={nearbyCafes ?? []}
           committedLocation={committedLocation}
           selectedCafe={selectedCafe}
           onDismissMiniCard={() => setSelectedCafe(null)}
@@ -311,6 +315,9 @@ export default function ExplorePage() {
           onPinPress={handlePinPress}
           savedCafes={savedCafes}
           onToggleSave={toggleSave}
+          search={search}
+          onSearchChange={setSearch}
+          onOpenOverlay={openOverlay}
         />
       )}
 
@@ -324,7 +331,8 @@ export default function ExplorePage() {
           >
             <CafeList
               search={search}
-              onOpenOverlay={openOverlay}
+              onSearchChange={setSearch}
+              onOpenOverlay={handleSearchBarPress}
               committedLocation={committedLocation}
               activeFilter={activeFilter}
               onToggleFilter={toggleFilter}

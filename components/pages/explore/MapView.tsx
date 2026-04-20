@@ -33,6 +33,9 @@ type MapViewProps = {
   onPinPress: (cafe: NearbyCafe) => void;
   savedCafes: string[];
   onToggleSave: (fsqPlaceId: string) => void;
+  search: string;
+  onSearchChange: (text: string) => void;
+  onOpenOverlay: () => void;
 };
 
 export default function MapView({
@@ -50,6 +53,9 @@ export default function MapView({
   onPinPress,
   savedCafes,
   onToggleSave,
+  search,
+  onSearchChange,
+  onOpenOverlay,
 }: MapViewProps) {
   const router = useRouter();
 
@@ -76,29 +82,71 @@ export default function MapView({
               }}
               onPress={() => onPinPress(cafe)}
             >
-              <View
-                style={[
-                  styles.pin,
-                  selectedCafe?.fsq_place_id === cafe.fsq_place_id && styles.pinActive,
-                ]}
-              >
+              <View style={[
+                styles.pin,
+                selectedCafe?.fsq_place_id === cafe.fsq_place_id && styles.pinActive,
+              ]}>
                 <Text style={styles.pinEmoji}>☕</Text>
               </View>
             </Marker>
           ))}
       </RNMapView>
 
-      <View style={styles.mapTopBar}>
+      {/* Top bar */}
+      <View style={{
+        position: 'absolute',
+        top: 56,
+        left: 16,
+        right: 16,
+        zIndex: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+      }}>
         <TouchableOpacity style={styles.backBtn} onPress={onExitMap}>
-          <Text style={styles.backBtnText}>← Back</Text>
+          <Text style={styles.backBtnText}>←</Text>
         </TouchableOpacity>
-        <View style={styles.locationLabel}>
-          <Text style={styles.locationLabelText} numberOfLines={1}>
-            📍 {committedLocation}
+
+        <TouchableOpacity
+          onPress={onOpenOverlay}
+          activeOpacity={0.85}
+          style={{
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: '#fff',
+            borderRadius: 100,
+            paddingHorizontal: 14,
+            paddingVertical: 9,
+            borderWidth: 1,
+            borderColor: '#000',
+            shadowColor: '#000',
+            shadowOpacity: 0.1,
+            shadowRadius: 6,
+            shadowOffset: { width: 0, height: 2 },
+            elevation: 3,
+          }}>
+          <Text style={{ marginRight: 6, fontSize: 13, color: '#aaa' }}>🔍</Text>
+          <Text style={{ flex: 1, fontSize: 13, color: search ? '#333' : '#aaa' }}>
+            {search || 'search a cafe...'}
           </Text>
-        </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={onOpenOverlay}
+          style={{
+            backgroundColor: Colors.navy,
+            borderRadius: 100,
+            paddingHorizontal: 14,
+            paddingVertical: 9,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          <Text style={{ fontSize: 16 }}>📍</Text>
+        </TouchableOpacity>
       </View>
 
+      {/* Mini card */}
       {selectedCafe && (
         <View style={styles.miniCard}>
           <TouchableOpacity
@@ -108,19 +156,13 @@ export default function MapView({
             <Text style={{ fontSize: 16, color: Colors.textMuted }}>✕</Text>
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', gap: 12 }}>
-            <View
-              style={{
-                width: 80,
-                height: 80,
-                borderRadius: 10,
-                overflow: 'hidden',
-                backgroundColor: Colors.border,
-                borderWidth: 1,
-                borderColor: '#eee',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+            <View style={{
+              width: 80, height: 80,
+              borderRadius: 10, overflow: 'hidden',
+              backgroundColor: Colors.border,
+              borderWidth: 1, borderColor: '#eee',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
               {selectedCafeCoverPhoto ? (
                 <Image
                   source={{ uri: selectedCafeCoverPhoto }}
@@ -135,14 +177,7 @@ export default function MapView({
               <Text style={styles.miniCardName} numberOfLines={1}>
                 {selectedCafe.name}
               </Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  marginTop: 4,
-                }}
-              >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
                 {selectedCafeRating != null ? (
                   <>
                     <Text style={{ fontSize: 12, color: '#f5a623' }}>
@@ -179,9 +214,7 @@ export default function MapView({
               alignItems: 'center',
             }}
           >
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
-              Cafe Page
-            </Text>
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Cafe Page</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -233,41 +266,22 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.25 }],
   },
   pinEmoji: { fontSize: 16 },
-  mapTopBar: {
-    position: 'absolute',
-    top: 56,
-    left: 16,
-    right: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    zIndex: 10,
-  },
   backBtn: {
     backgroundColor: '#fff',
     borderRadius: 100,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#000',
   },
-  backBtnText: { fontWeight: '700', color: Colors.navy, fontSize: 13 },
-  locationLabel: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 100,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  locationLabelText: { fontSize: 13, color: '#333', fontWeight: '500' },
+  backBtnText: { fontWeight: '700', color: Colors.navy, fontSize: 16 },
   miniCard: {
     position: 'absolute',
     bottom: SCREEN_HEIGHT * 0.18,

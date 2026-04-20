@@ -14,6 +14,34 @@ export const FILTER_QUERIES: Record<string, string> = {
   saved: '',
 };
 
+const EXCLUDED_CHAINS = [
+  'starbucks',
+  'dunkin',
+  'dunkin\'',
+  'mcdonald\'s',
+  'mcdonalds',
+  'tim hortons',
+  'peet\'s',
+  'peets',
+  'caribou coffee',
+  'panera',
+  'panera bread',
+  'costa coffee',
+  'nero',
+  'caffe nero',
+  'second cup',
+  'dutch bros',
+  'biggby',
+  'scooter\'s coffee',
+  'scooters',
+  'seven eleven',
+  '7-eleven',
+  'wawa',
+  'speedway',
+  'krispy kreme',
+  'krispy kreme doughnuts',
+];
+
 
 export async function getNearbyCafes(
   lat: number,
@@ -47,7 +75,11 @@ if (!response.ok) {
   return [];
 }
 
-return data.results ?? [];
+const results = data.results ?? [];
+return results.filter((place: any) => {
+  const name = place.name?.toLowerCase() ?? '';
+  return !EXCLUDED_CHAINS.some(chain => name.includes(chain));
+});
 
   } catch (err) {
     console.error('Foursquare fetch error:', err);

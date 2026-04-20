@@ -1,6 +1,6 @@
 import GridBackground from 'components/GridBackdrop';
 import React, { useState, useEffect, useRef } from 'react';
-import { Platform, Text, View, Keyboard, TouchableWithoutFeedback, TextInput } from 'react-native';
+import { Platform, Text, View, Keyboard, TouchableWithoutFeedback, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import Card from '../Card';
 import ProfilePicIcon from './svgs/ProfilePicIcon';
 import FormInput from './FormInput';
@@ -18,6 +18,7 @@ import { supabase } from '../../../../utils/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useProfile } from 'utils/ProfileContext';
 import { Colors } from 'utils/colors';
+import { useFonts, Caveat_700Bold, Caveat_400Regular } from '@expo-google-fonts/caveat';
 
 export default function ProfileSetup() {
   const { userLocation } = useLocalSearchParams<{ userLocation?: string }>();
@@ -27,6 +28,7 @@ export default function ProfileSetup() {
   const [email, setEmail] = useState('');
   const [birthday, setBirthday] = useState(new Date().toISOString().split('T')[0]);
   const [location, setLocation] = useState('');
+  const [fontsLoaded] = useFonts({ Caveat_700Bold, Caveat_400Regular });
 
   const nameRef = useRef<TextInput>(null);
   const phoneRef = useRef<TextInput>(null);
@@ -87,12 +89,26 @@ export default function ProfileSetup() {
     }
   };
 
+  if (!fontsLoaded) return null;
+
   return (
     <>
-      <GridBackground color1="#f2f0ea" color2={Colors.border} />
+      <GridBackground color1={Colors.blue} color2="#4b5a9c" />
       <Page>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View className="w-full items-center">
+
+            {/* Wordmark */}
+            <Text style={{
+              fontFamily: 'Caveat_700Bold',
+              fontSize: 40,
+              color: '#fff',
+              textAlign: 'center',
+              marginBottom: 16,
+            }}>
+              sip it
+            </Text>
+
             <Card
               title={profileSetupContent.title}
               subtitle={profileSetupContent.subtitle}
@@ -102,7 +118,7 @@ export default function ProfileSetup() {
                   icon={<NameIcon width={24} height={24} />}
                   value={name}
                   onChangeText={setName}
-                  placeholder="Username"
+                  placeholder="Name"
                   inputRef={nameRef}
                   returnKeyType="next"
                   onSubmitEditing={() => phoneRef.current?.focus()}
@@ -163,13 +179,72 @@ export default function ProfileSetup() {
                 buttonClassName="rounded-full mx-auto flex justify-center items-center h-[40px] w-[150px] mt-4"
                 buttonStyle={{ backgroundColor: Colors.blue }}
                 textClassName="text-lg font-semibold text-white"
-                title="CONTINUE"
+                title="NEXT"
                 onPress={handleContinuePressed}
               />
             </Card>
+
+            {/* Or register with */}
+            <View style={{
+              backgroundColor: '#fff',
+              borderRadius: 20,
+              padding: 16,
+              width: '70%',
+              alignItems: 'center',
+              marginTop: 12,
+              gap: 8,
+            }}>
+              <Text style={{
+                fontSize: 14,
+                color: Colors.textMuted,
+                fontFamily: 'Caveat_400Regular',
+              }}>
+                —or register with—
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 16 }}>
+                <TouchableOpacity style={styles.socialButton}>
+                  <Text style={{ fontSize: 28 }}>G</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.socialButton}>
+                  <Text style={{ fontSize: 28 }}>🍎</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Already have an account */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16 }}>
+              <Text style={{
+                fontSize: 14,
+                color: '#fff',
+                fontFamily: 'Caveat_400Regular',
+              }}>
+                already have an account?{' '}
+              </Text>
+              <TouchableOpacity onPress={() => router.push('/intro/login')}>
+                <Text style={{
+                  fontSize: 14,
+                  color: '#5CE1E6',
+                  fontFamily: 'Caveat_700Bold',
+                }}>
+                  login now
+                </Text>
+              </TouchableOpacity>
+            </View>
+
           </View>
         </TouchableWithoutFeedback>
       </Page>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  socialButton: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    width: 70,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

@@ -13,8 +13,8 @@ export default function Card(props: CardProps) {
       style={{
         backgroundColor: '#fff',
         borderRadius: 24,
-        padding: 32,
-        width: '90%',
+        padding: 10,
+        width: '80%',
         borderWidth: 1,
         borderColor: '#000',
       }}>
@@ -39,7 +39,7 @@ export default function Card(props: CardProps) {
           </Text>
           {props.subtitle && (
             <Text
-              style={{ fontSize: 14, fontStyle: 'italic', textAlign: 'center', color: '#374151' }}>
+              style={{ fontSize: 13, fontStyle: 'italic', textAlign: 'center', color: '#374151' }}>
               {props.subtitle}
             </Text>
           )}
