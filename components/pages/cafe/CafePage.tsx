@@ -5,11 +5,11 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  SafeAreaView,
   StatusBar,
   Linking,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useProfile } from 'utils/ProfileContext';
 import BottomNav from 'components/BottomNav';
@@ -18,6 +18,7 @@ import { supabase } from 'utils/supabase';
 import { Colors } from 'utils/colors';
 import { FeedCard } from 'components/pages/feed/FeedCard';
 import GridBackground from 'components/GridBackdrop';
+
 
 export default function CafePage() {
   const router = useRouter();
@@ -126,6 +127,15 @@ export default function CafePage() {
   const popularMenuItems = allMenuItems.slice(0, 4);
   const menuTabItems = allMenuItems.slice(0, 10);
 
+  const topVibes = [...new Set(reviews.flatMap((r) => r.vibes ?? []))]
+  .map((vibe) => ({
+    name: vibe,
+    count: reviews.filter((r) => r.vibes?.includes(vibe)).length,
+  }))
+  .sort((a, b) => b.count - a.count)
+  .slice(0, 3)
+  .map((v) => v.name);
+
   const openMaps = () => {
     const query = encodeURIComponent(`${cafeName} ${cafeAddress}`);
     const url = Platform.OS === 'ios' ? `maps://?q=${query}` : `geo:0,0?q=${query}`;
@@ -142,16 +152,16 @@ export default function CafePage() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.blue }}>
+    <View style={{ flex: 1 }}>
       <GridBackground color1={Colors.blue} color2="#4b5a9c" />
       <StatusBar barStyle="light-content" />
-
+  
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}>
-
+  
         {/* Hero Image */}
-        <View style={{ height: 260, position: 'relative', backgroundColor: Colors.blue }}>
+        <View style={{ height: 320, position: 'relative', backgroundColor: Colors.blue, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden', marginBottom: -5, zIndex: 1 }}>
           {coverPhoto ? (
             <Image
               source={{ uri: coverPhoto }}
@@ -159,20 +169,11 @@ export default function CafePage() {
               resizeMode="cover"
             />
           ) : (
-            <View style={{
-              width: '100%', height: '100%',
-              backgroundColor: Colors.blue,
-              alignItems: 'center', justifyContent: 'center',
-            }}>
+            <View style={{ width: '100%', height: '100%', backgroundColor: Colors.blue, alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ fontSize: 60 }}>☕</Text>
             </View>
           )}
-
-          <View style={{
-            position: 'absolute', bottom: 0, left: 0, right: 0, height: 140,
-            backgroundColor: 'rgba(0,0,0,0.45)',
-          }} />
-
+  
           <TouchableOpacity
             onPress={() => router.back()}
             style={{
@@ -183,13 +184,13 @@ export default function CafePage() {
             }}>
             <Text style={{ color: '#fff', fontSize: 18 }}>←</Text>
           </TouchableOpacity>
-
+  
           <TouchableOpacity
             onPress={toggleSave}
             style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
             <Text style={{ fontSize: 24 }}>{saved ? '❤️' : '🤍'}</Text>
           </TouchableOpacity>
-
+  
           <View style={{ position: 'absolute', bottom: 12, left: 16, right: 16 }}>
             <Text style={{ color: '#fff', fontSize: 12, marginBottom: 2, opacity: 0.85 }}>
               {cafeCategory}
@@ -199,23 +200,14 @@ export default function CafePage() {
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               {avgRating != null && (
-                <Text style={{ color: '#f5a623', fontSize: 14 }}>
-                  {renderStars(avgRating)}
-                </Text>
+                <Text style={{ color: '#f5a623', fontSize: 14 }}>{renderStars(avgRating)}</Text>
               )}
               {avgRating != null && (
-                <View style={{
-                  backgroundColor: Colors.blue,
-                  borderRadius: 100, paddingHorizontal: 8, paddingVertical: 2,
-                }}>
-                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
-                    {avgRating}
-                  </Text>
+                <View style={{ backgroundColor: Colors.blue, borderRadius: 100, paddingHorizontal: 8, paddingVertical: 2 }}>
+                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>{avgRating}</Text>
                 </View>
               )}
-              <Text style={{ color: '#fff', fontSize: 12 }}>
-                ({reviewCount} Sip It Reviews)
-              </Text>
+              <Text style={{ color: '#fff', fontSize: 12 }}>({reviewCount} Sip It Reviews)</Text>
             </View>
             <TouchableOpacity onPress={() => setActiveTab('gallery')} style={{ marginTop: 4 }}>
               <Text style={{ color: '#fff', fontSize: 12, textDecorationLine: 'underline' }}>
@@ -224,67 +216,35 @@ export default function CafePage() {
             </TouchableOpacity>
           </View>
         </View>
-
+  
         {/* Box 1 — Action buttons + popular items + best for */}
-        <View style={{
-          backgroundColor: '#fff',
-          borderRadius: 20,
-          marginHorizontal: 16,
-          marginTop: 16,
-          padding: 16,
-          borderWidth: 1,
-          borderColor: Colors.border,
-        }}>
-          {/* Action buttons */}
+        <View style={{ backgroundColor: '#fff', borderBottomLeftRadius: 20, borderBottomRightRadius: 20, marginHorizontal: 16, padding: 16, borderWidth: 1, borderColor: Colors.border, zIndex: 0 }}>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
             <TouchableOpacity
               onPress={() => router.push(`/review?cafeId=${id}&cafeName=${cafe.name}`)}
-              style={{
-                flexDirection: 'row', alignItems: 'center',
-                backgroundColor: Colors.blue,
-                borderRadius: 100, paddingHorizontal: 14, paddingVertical: 8, gap: 4,
-              }}>
+              style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.blue, borderRadius: 100, paddingHorizontal: 14, paddingVertical: 8, gap: 4 }}>
               <Text style={{ color: '#fff', fontSize: 12 }}>+</Text>
               <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Sip & Score</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={openMaps}
-              style={{
-                flexDirection: 'row', alignItems: 'center',
-                backgroundColor: Colors.blue,
-                borderRadius: 100, paddingHorizontal: 14, paddingVertical: 8, gap: 4,
-              }}>
+              style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.blue, borderRadius: 100, paddingHorizontal: 14, paddingVertical: 8, gap: 4 }}>
               <Text style={{ color: '#fff', fontSize: 12 }}>📍</Text>
               <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Map</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={{
-              flexDirection: 'row', alignItems: 'center',
-              backgroundColor: Colors.blue,
-              borderRadius: 100, paddingHorizontal: 14, paddingVertical: 8, gap: 4,
-            }}>
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.blue, borderRadius: 100, paddingHorizontal: 14, paddingVertical: 8, gap: 4 }}>
               <Text style={{ color: '#fff', fontSize: 12 }}>🕐</Text>
               <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Hours</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={{
-              flexDirection: 'row', alignItems: 'center',
-              backgroundColor: Colors.blue,
-              borderRadius: 100, paddingHorizontal: 14, paddingVertical: 8, gap: 4,
-            }}>
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.blue, borderRadius: 100, paddingHorizontal: 14, paddingVertical: 8, gap: 4 }}>
               <Text style={{ color: '#fff', fontSize: 12 }}>📞</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Most Popular Menu Items */}
-          <Text style={{
-            fontSize: 15, fontWeight: '800', color: Colors.navy,
-            marginBottom: 10, textAlign: 'center', letterSpacing: 0.5,
-          }}>
+  
+          <Text style={{ fontSize: 15, fontWeight: '800', color: Colors.navy, marginBottom: 10, textAlign: 'center', letterSpacing: 0.5 }}>
             MOST POPULAR MENU ITEMS
           </Text>
-          <View style={{
-            borderWidth: 1, borderColor: Colors.border,
-            borderRadius: 16, padding: 14, marginBottom: 16,
-          }}>
+          <View style={{ borderWidth: 1, borderColor: Colors.border, borderRadius: 16, padding: 14, marginBottom: 16 }}>
             {popularMenuItems.length === 0 ? (
               <Text style={{ color: Colors.textMuted, textAlign: 'center', fontSize: 13 }}>
                 No menu items yet — add a review!
@@ -298,71 +258,42 @@ export default function CafePage() {
               ))
             )}
           </View>
-
-          {/* Best For */}
-          <Text style={{
-            fontSize: 15, fontWeight: '800', color: Colors.navy,
-            marginBottom: 10, letterSpacing: 0.5,
-          }}>
+  
+          <Text style={{ fontSize: 15, fontWeight: '800', color: Colors.navy, marginBottom: 10, letterSpacing: 0.5 }}>
             BEST FOR
           </Text>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-            {vibes.length === 0 ? (
+            {topVibes.length === 0 ? (
               <Text style={{ color: Colors.textMuted, fontSize: 13 }}>No vibes yet!</Text>
             ) : (
-              vibes.map((tag: string) => (
-                <View key={tag} style={{
-                  borderWidth: 1, borderColor: Colors.navy,
-                  borderRadius: 100, paddingHorizontal: 14, paddingVertical: 6,
-                }}>
+              topVibes.map((tag: string) => (
+                <View key={tag} style={{ borderWidth: 1, borderColor: Colors.navy, borderRadius: 100, paddingHorizontal: 14, paddingVertical: 6 }}>
                   <Text style={{ fontSize: 13, color: Colors.navy }}>{tag}</Text>
                 </View>
               ))
             )}
           </View>
         </View>
-
+  
         {/* Box 2 — Tabs + content */}
-        <View style={{
-          backgroundColor: '#fff',
-          borderRadius: 20,
-          margin: 16,
-          padding: 16,
-          borderWidth: 1,
-          borderColor: Colors.border,
-        }}>
-          {/* Tabs */}
-          <View style={{
-            backgroundColor: Colors.blue,
-            borderRadius: 16, flexDirection: 'row', marginBottom: 16,
-          }}>
+        <View style={{ backgroundColor: '#fff', borderRadius: 20, margin: 16, padding: 16, borderWidth: 1, borderColor: Colors.border }}>
+          <View style={{ backgroundColor: Colors.blue, borderRadius: 16, flexDirection: 'row', marginBottom: 16 }}>
             {['menu', 'reviews', 'gallery'].map((tab) => (
               <TouchableOpacity
                 key={tab}
                 onPress={() => setActiveTab(tab)}
-                style={{
-                  flex: 1, paddingVertical: 12, alignItems: 'center',
-                  backgroundColor: activeTab === tab ? '#fff' : 'transparent',
-                  borderRadius: 12, margin: 4,
-                }}>
-                <Text style={{
-                  fontWeight: '700', fontSize: 13,
-                  color: activeTab === tab ? Colors.blue : '#fff',
-                  textTransform: 'capitalize',
-                }}>
+                style={{ flex: 1, paddingVertical: 12, alignItems: 'center', backgroundColor: activeTab === tab ? '#fff' : 'transparent', borderRadius: 12, margin: 4 }}>
+                <Text style={{ fontWeight: '700', fontSize: 13, color: activeTab === tab ? Colors.blue : '#fff', textTransform: 'capitalize' }}>
                   {tab}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-
-          {/* Menu tab */}
+  
           {activeTab === 'menu' && (
             <View style={{ borderWidth: 1, borderColor: Colors.border, borderRadius: 16, padding: 14 }}>
               {menuTabItems.length === 0 ? (
-                <Text style={{ color: Colors.textMuted, textAlign: 'center', fontSize: 13 }}>
-                  No menu items yet!
-                </Text>
+                <Text style={{ color: Colors.textMuted, textAlign: 'center', fontSize: 13 }}>No menu items yet!</Text>
               ) : (
                 menuTabItems.map((item: { name: string; count: number }, index: number) => (
                   <View key={index} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -373,8 +304,7 @@ export default function CafePage() {
               )}
             </View>
           )}
-
-          {/* Reviews tab */}
+  
           {activeTab === 'reviews' && (
             reviews.length === 0 ? (
               <Text style={{ textAlign: 'center', color: Colors.textMuted, marginTop: 10 }}>
@@ -386,8 +316,7 @@ export default function CafePage() {
               ))
             )
           )}
-
-          {/* Gallery tab */}
+  
           {activeTab === 'gallery' && (
             galleryPhotos.length === 0 ? (
               <Text style={{ textAlign: 'center', color: Colors.textMuted, marginTop: 10, fontWeight: '700' }}>
@@ -407,9 +336,11 @@ export default function CafePage() {
             )
           )}
         </View>
-
+  
       </ScrollView>
-      <BottomNav activeTab="explore" />
-    </SafeAreaView>
+      <SafeAreaView edges={['bottom']}>
+        <BottomNav activeTab="explore" />
+      </SafeAreaView>
+    </View>
   );
 }
