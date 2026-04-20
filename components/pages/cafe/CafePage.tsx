@@ -16,6 +16,8 @@ import BottomNav from 'components/BottomNav';
 import { getCafeDetails } from 'utils/foursquare';
 import { supabase } from 'utils/supabase';
 import { Colors } from 'utils/colors';
+import { FeedCard } from 'components/pages/feed/FeedCard';
+import GridBackground from 'components/GridBackdrop';
 
 export default function CafePage() {
   const router = useRouter();
@@ -26,6 +28,7 @@ export default function CafePage() {
   const [cafe, setCafe] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [avgRating, setAvgRating] = useState<number | null>(null);
 
   const loadCafe = async () => {
     if (!id) return;
@@ -38,10 +41,22 @@ export default function CafePage() {
     if (!id) return;
     const { data } = await supabase
       .from('reviews')
-      .select('*, users(username)')
+      .select('*, users(username, profile_image_url)')
       .eq('cafe_id', id)
-      .order('created_at', { ascending: true }); // oldest first for cover photo
-    if (data) setReviews(data);
+      .order('created_at', { ascending: false });
+    if (data) {
+      setReviews(data);
+      if (data.length > 0) {
+        const avg = data.reduce((sum, r) => {
+          const ratings = [r.drinks_rating, r.food_rating, r.vibe_rating, r.service_rating]
+            .filter((v) => v != null);
+          return sum + (ratings.length > 0
+            ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length
+            : 0);
+        }, 0) / data.length;
+        setAvgRating(Math.round(avg * 10) / 10);
+      }
+    }
   };
 
   const checkSaved = async () => {
@@ -74,60 +89,69 @@ export default function CafePage() {
 
   if (loading) {
     return (
-      <SafeAreaView
-        style={{
-          flex: 1,
-          backgroundColor: '#fff',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-        <Text style={{ color: Colors.textMuted }}>Loading cafe...</Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: Colors.blue, alignItems: 'center', justifyContent: 'center' }}>
+        <GridBackground color1={Colors.blue} color2="#4b5a9c" />
+        <Text style={{ color: '#fff' }}>Loading cafe...</Text>
       </SafeAreaView>
     );
   }
 
   if (!cafe) return null;
 
-  // Build display values from Foursquare data
   const cafeName = cafe.name ?? '';
   const cafeCategory = cafe.categories?.map((c: any) => c.name).join(' • ') ?? '';
   const cafeAddress = cafe.location?.formatted_address ?? '';
   const reviewCount = reviews.length;
-  const menuItems = reviews
-    .filter((r) => r.item_name)
-    .map((r) => r.item_name)
-    .filter((v, i, a) => a.indexOf(v) === i); // unique items
   const galleryPhotos = reviews.flatMap((r) => r.photos ?? []);
   const vibes = [...new Set(reviews.flatMap((r) => r.vibes ?? []))];
-  const coverPhoto = reviews.find((r) => r.photos && r.photos.length > 0)?.photos[0] ?? null;
-  const displayReviews = [...reviews].reverse(); // newest first for display
+  const coverPhoto = reviews
+    .slice()
+    .reverse()
+    .find((r) => r.photos && r.photos.length > 0)?.photos[0] ?? null;
+
+  const allMenuItems = reviews
+    .filter((r) => r.item_name)
+    .map((r) => r.item_name)
+    .reduce((acc: { name: string; count: number }[], item: string) => {
+      const existing = acc.find((i) => i.name.toLowerCase() === item.toLowerCase());
+      if (existing) {
+        existing.count++;
+      } else {
+        acc.push({ name: item, count: 1 });
+      }
+      return acc;
+    }, [])
+    .sort((a: { name: string; count: number }, b: { name: string; count: number }) => b.count - a.count);
+
+  const popularMenuItems = allMenuItems.slice(0, 4);
+  const menuTabItems = allMenuItems.slice(0, 10);
 
   const openMaps = () => {
-    const name = cafe.name;
-    const address = cafe.location?.formatted_address;
-    if (!address) return;
-
-    const query = encodeURIComponent(`${name} ${address}`);
+    const query = encodeURIComponent(`${cafeName} ${cafeAddress}`);
     const url = Platform.OS === 'ios' ? `maps://?q=${query}` : `geo:0,0?q=${query}`;
-
     Linking.canOpenURL(url).then((supported) => {
-      if (supported) {
-        Linking.openURL(url);
-      } else {
-        Linking.openURL(`https://maps.google.com/maps?q=${query}`);
-      }
+      if (supported) Linking.openURL(url);
+      else Linking.openURL(`https://maps.google.com/maps?q=${query}`);
     });
   };
 
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }).map((_, i) =>
+      i < Math.round(rating) ? '★' : '☆'
+    ).join('');
+  };
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.blue }}>
+      <GridBackground color1={Colors.blue} color2="#4b5a9c" />
       <StatusBar barStyle="light-content" />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}>
+
         {/* Hero Image */}
-        <View style={{ height: 220, position: 'relative', backgroundColor: Colors.navy }}>
+        <View style={{ height: 260, position: 'relative', backgroundColor: Colors.blue }}>
           {coverPhoto ? (
             <Image
               source={{ uri: coverPhoto }}
@@ -135,60 +159,65 @@ export default function CafePage() {
               resizeMode="cover"
             />
           ) : (
-            <View
-              style={{
-                width: '100%',
-                height: '100%',
-                backgroundColor: Colors.navy,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
+            <View style={{
+              width: '100%', height: '100%',
+              backgroundColor: Colors.blue,
+              alignItems: 'center', justifyContent: 'center',
+            }}>
               <Text style={{ fontSize: 60 }}>☕</Text>
             </View>
           )}
 
-          {/* Back button */}
+          <View style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0, height: 140,
+            backgroundColor: 'rgba(0,0,0,0.45)',
+          }} />
+
           <TouchableOpacity
             onPress={() => router.back()}
             style={{
-              position: 'absolute',
-              top: 50,
-              left: 16,
+              position: 'absolute', top: 16, left: 16,
               backgroundColor: Colors.red,
-              borderRadius: 100,
-              width: 36,
-              height: 36,
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 10,
+              borderRadius: 100, width: 36, height: 36,
+              alignItems: 'center', justifyContent: 'center', zIndex: 10,
             }}>
             <Text style={{ color: '#fff', fontSize: 18 }}>←</Text>
           </TouchableOpacity>
 
-          {/* Heart button */}
           <TouchableOpacity
             onPress={toggleSave}
-            style={{ position: 'absolute', top: 50, right: 16, zIndex: 10 }}>
+            style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
             <Text style={{ fontSize: 24 }}>{saved ? '❤️' : '🤍'}</Text>
           </TouchableOpacity>
 
-          {/* Cafe name overlay */}
-          <View style={{ position: 'absolute', bottom: 40, left: 16 }}>
-            <Text style={{ color: '#fff', fontSize: 13, marginBottom: 4 }}>{cafeCategory}</Text>
-            <Text style={{ color: '#fff', fontSize: 26, fontWeight: '900' }}>{cafeName}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-              <View
-                style={{
+          <View style={{ position: 'absolute', bottom: 12, left: 16, right: 16 }}>
+            <Text style={{ color: '#fff', fontSize: 12, marginBottom: 2, opacity: 0.85 }}>
+              {cafeCategory}
+            </Text>
+            <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', marginBottom: 6 }}>
+              {cafeName}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              {avgRating != null && (
+                <Text style={{ color: '#f5a623', fontSize: 14 }}>
+                  {renderStars(avgRating)}
+                </Text>
+              )}
+              {avgRating != null && (
+                <View style={{
                   backgroundColor: Colors.blue,
-                  borderRadius: 100,
-                  paddingHorizontal: 8,
-                  paddingVertical: 2,
+                  borderRadius: 100, paddingHorizontal: 8, paddingVertical: 2,
                 }}>
-                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Sip It</Text>
-              </View>
-              <Text style={{ color: '#fff', fontSize: 12 }}>({reviewCount} Sip It Reviews)</Text>
+                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                    {avgRating}
+                  </Text>
+                </View>
+              )}
+              <Text style={{ color: '#fff', fontSize: 12 }}>
+                ({reviewCount} Sip It Reviews)
+              </Text>
             </View>
-            <TouchableOpacity style={{ marginTop: 6 }}>
+            <TouchableOpacity onPress={() => setActiveTab('gallery')} style={{ marginTop: 4 }}>
               <Text style={{ color: '#fff', fontSize: 12, textDecorationLine: 'underline' }}>
                 Check out the vibe ({galleryPhotos.length} photos)
               </Text>
@@ -196,35 +225,24 @@ export default function CafePage() {
           </View>
         </View>
 
-        {/* Info section */}
-        <View style={{ backgroundColor: '#fff', padding: 16 }}>
-          {/* Address */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
-            <View
-              style={{
-                backgroundColor: '#E8F5E9',
-                borderRadius: 100,
-                paddingHorizontal: 12,
-                paddingVertical: 4,
-              }}>
-              <Text style={{ color: '#2E7D32', fontSize: 13, fontWeight: '600' }}>
-                📍 {cafeAddress}
-              </Text>
-            </View>
-          </View>
-
+        {/* Box 1 — Action buttons + popular items + best for */}
+        <View style={{
+          backgroundColor: '#fff',
+          borderRadius: 20,
+          marginHorizontal: 16,
+          marginTop: 16,
+          padding: 16,
+          borderWidth: 1,
+          borderColor: Colors.border,
+        }}>
           {/* Action buttons */}
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
             <TouchableOpacity
               onPress={() => router.push(`/review?cafeId=${id}&cafeName=${cafe.name}`)}
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: Colors.red,
-                borderRadius: 100,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                gap: 4,
+                flexDirection: 'row', alignItems: 'center',
+                backgroundColor: Colors.blue,
+                borderRadius: 100, paddingHorizontal: 14, paddingVertical: 8, gap: 4,
               }}>
               <Text style={{ color: '#fff', fontSize: 12 }}>+</Text>
               <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Sip & Score</Text>
@@ -232,208 +250,124 @@ export default function CafePage() {
             <TouchableOpacity
               onPress={openMaps}
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: Colors.red,
-                borderRadius: 100,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                gap: 4,
+                flexDirection: 'row', alignItems: 'center',
+                backgroundColor: Colors.blue,
+                borderRadius: 100, paddingHorizontal: 14, paddingVertical: 8, gap: 4,
               }}>
               <Text style={{ color: '#fff', fontSize: 12 }}>📍</Text>
               <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Map</Text>
             </TouchableOpacity>
-            {cafe.website && (
-              <TouchableOpacity
-                onPress={() => {
-                  if (cafe.website) {
-                    Linking.openURL(cafe.website);
-                  }
-                }}
-                disabled={!cafe.website}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: cafe.website ? Colors.red : Colors.textMuted,
-                  borderRadius: 100,
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  gap: 4,
-                }}>
-                <Text style={{ color: '#fff', fontSize: 12 }}>🌐</Text>
-                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Website</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: Colors.red,
-                borderRadius: 100,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                gap: 4,
-              }}>
+            <TouchableOpacity style={{
+              flexDirection: 'row', alignItems: 'center',
+              backgroundColor: Colors.blue,
+              borderRadius: 100, paddingHorizontal: 14, paddingVertical: 8, gap: 4,
+            }}>
               <Text style={{ color: '#fff', fontSize: 12 }}>🕐</Text>
               <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Hours</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: Colors.red,
-                borderRadius: 100,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                gap: 4,
-              }}>
+            <TouchableOpacity style={{
+              flexDirection: 'row', alignItems: 'center',
+              backgroundColor: Colors.blue,
+              borderRadius: 100, paddingHorizontal: 14, paddingVertical: 8, gap: 4,
+            }}>
               <Text style={{ color: '#fff', fontSize: 12 }}>📞</Text>
-              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Call</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Most Popular Menu Items from reviews */}
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: '700',
-              color: Colors.navy,
-              marginBottom: 10,
-              textAlign: 'center',
-            }}>
+          {/* Most Popular Menu Items */}
+          <Text style={{
+            fontSize: 15, fontWeight: '800', color: Colors.navy,
+            marginBottom: 10, textAlign: 'center', letterSpacing: 0.5,
+          }}>
             MOST POPULAR MENU ITEMS
           </Text>
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: Colors.border,
-              borderRadius: 16,
-              padding: 14,
-              marginBottom: 20,
-            }}>
-            {menuItems.length === 0 ? (
+          <View style={{
+            borderWidth: 1, borderColor: Colors.border,
+            borderRadius: 16, padding: 14, marginBottom: 16,
+          }}>
+            {popularMenuItems.length === 0 ? (
               <Text style={{ color: Colors.textMuted, textAlign: 'center', fontSize: 13 }}>
                 No menu items yet — add a review!
               </Text>
             ) : (
-              menuItems.map((item, index) => (
-                <View
-                  key={index}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <Text style={{ fontSize: 14 }}>⭐</Text>
-                  <Text style={{ fontSize: 13, color: Colors.navy, fontWeight: '500' }}>
-                    {item}
-                  </Text>
+              popularMenuItems.map((item: { name: string; count: number }, index: number) => (
+                <View key={index} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <Text style={{ fontSize: 14, color: '#f5a623' }}>★</Text>
+                  <Text style={{ fontSize: 13, color: Colors.navy, fontWeight: '500' }}>{item.name}</Text>
                 </View>
               ))
             )}
           </View>
 
-          {/* Best For — from vibes in reviews */}
-          <Text style={{ fontSize: 16, fontWeight: '700', color: Colors.navy, marginBottom: 10 }}>
+          {/* Best For */}
+          <Text style={{
+            fontSize: 15, fontWeight: '800', color: Colors.navy,
+            marginBottom: 10, letterSpacing: 0.5,
+          }}>
             BEST FOR
           </Text>
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
             {vibes.length === 0 ? (
               <Text style={{ color: Colors.textMuted, fontSize: 13 }}>No vibes yet!</Text>
             ) : (
               vibes.map((tag: string) => (
-                <View
-                  key={tag}
-                  style={{
-                    borderWidth: 1,
-                    borderColor: Colors.navy,
-                    borderRadius: 100,
-                    paddingHorizontal: 14,
-                    paddingVertical: 6,
-                  }}>
+                <View key={tag} style={{
+                  borderWidth: 1, borderColor: Colors.navy,
+                  borderRadius: 100, paddingHorizontal: 14, paddingVertical: 6,
+                }}>
                   <Text style={{ fontSize: 13, color: Colors.navy }}>{tag}</Text>
                 </View>
               ))
             )}
           </View>
+        </View>
 
+        {/* Box 2 — Tabs + content */}
+        <View style={{
+          backgroundColor: '#fff',
+          borderRadius: 20,
+          margin: 16,
+          padding: 16,
+          borderWidth: 1,
+          borderColor: Colors.border,
+        }}>
           {/* Tabs */}
-          <View
-            style={{
-              backgroundColor: Colors.blue,
-              borderRadius: 16,
-              flexDirection: 'row',
-              marginBottom: 16,
-            }}>
+          <View style={{
+            backgroundColor: Colors.blue,
+            borderRadius: 16, flexDirection: 'row', marginBottom: 16,
+          }}>
             {['menu', 'reviews', 'gallery'].map((tab) => (
               <TouchableOpacity
                 key={tab}
                 onPress={() => setActiveTab(tab)}
                 style={{
-                  flex: 1,
-                  paddingVertical: 12,
-                  alignItems: 'center',
+                  flex: 1, paddingVertical: 12, alignItems: 'center',
                   backgroundColor: activeTab === tab ? '#fff' : 'transparent',
-                  borderRadius: 12,
-                  margin: 4,
+                  borderRadius: 12, margin: 4,
                 }}>
-                <Text
-                  style={{
-                    fontWeight: '700',
-                    fontSize: 13,
-                    color: activeTab === tab ? Colors.blue : '#fff',
-                    textTransform: 'capitalize',
-                  }}>
+                <Text style={{
+                  fontWeight: '700', fontSize: 13,
+                  color: activeTab === tab ? Colors.blue : '#fff',
+                  textTransform: 'capitalize',
+                }}>
                   {tab}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          {/* Gallery tab */}
-          {activeTab === 'gallery' &&
-            (galleryPhotos.length === 0 ? (
-              <Text
-                style={{
-                  textAlign: 'center',
-                  color: '#1a1a1a',
-                  marginTop: 10,
-                  fontWeight: '900',
-                }}>
-                Be The First to Add a Photo!(First Photo Will Be Used as Cover Photo)
-              </Text>
-            ) : (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
-                {galleryPhotos.map((uri: string, index: number) => (
-                  <Image
-                    key={index}
-                    source={{ uri }}
-                    style={{
-                      width: '48.5%',
-                      height: 160,
-                      borderRadius: 10,
-                      borderWidth: 1,
-                      borderColor: Colors.border,
-                    }}
-                    resizeMode="cover"
-                  />
-                ))}
-              </View>
-            ))}
-
           {/* Menu tab */}
           {activeTab === 'menu' && (
-            <View
-              style={{ borderWidth: 1, borderColor: Colors.border, borderRadius: 16, padding: 14 }}>
-              {menuItems.length === 0 ? (
+            <View style={{ borderWidth: 1, borderColor: Colors.border, borderRadius: 16, padding: 14 }}>
+              {menuTabItems.length === 0 ? (
                 <Text style={{ color: Colors.textMuted, textAlign: 'center', fontSize: 13 }}>
                   No menu items yet!
                 </Text>
               ) : (
-                menuItems.map((item, index) => (
-                  <View
-                    key={index}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <Text style={{ fontSize: 14 }}>⭐</Text>
-                    <Text style={{ fontSize: 13, color: Colors.navy, fontWeight: '500' }}>
-                      {item}
-                    </Text>
+                menuTabItems.map((item: { name: string; count: number }, index: number) => (
+                  <View key={index} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <Text style={{ fontSize: 14, color: '#f5a623' }}>★</Text>
+                    <Text style={{ fontSize: 13, color: Colors.navy, fontWeight: '500' }}>{item.name}</Text>
                   </View>
                 ))
               )}
@@ -441,55 +375,40 @@ export default function CafePage() {
           )}
 
           {/* Reviews tab */}
-          {activeTab === 'reviews' &&
-            (displayReviews.length === 0 ? (
+          {activeTab === 'reviews' && (
+            reviews.length === 0 ? (
               <Text style={{ textAlign: 'center', color: Colors.textMuted, marginTop: 10 }}>
                 No reviews yet — be the first to Sip & Score!
               </Text>
             ) : (
               reviews.map((review) => (
-                <View
-                  key={review.id}
-                  style={{
-                    backgroundColor: Colors.background,
-                    borderRadius: 14,
-                    padding: 14,
-                    marginBottom: 10,
-                  }}>
-                  <Text
-                    style={{
-                      fontWeight: '700',
-                      fontSize: 13,
-                      color: Colors.navy,
-                      marginBottom: 4,
-                    }}>
-                    {review.users?.username?.toUpperCase()}
-                  </Text>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <Text style={{ fontSize: 11, color: Colors.textMuted }}>
-                      🍹 {review.drinks_rating ?? 'N/A'}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: Colors.textMuted }}>
-                      🍔 {review.food_rating ?? 'N/A'}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: Colors.textMuted }}>
-                      ✨ {review.vibe_rating ?? 'N/A'}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: Colors.textMuted }}>
-                      🤝 {review.service_rating ?? 'N/A'}
-                    </Text>
-                  </View>
-                  {review.comments ? (
-                    <Text style={{ fontSize: 12, color: '#555', marginTop: 6 }}>
-                      {review.comments}
-                    </Text>
-                  ) : null}
-                </View>
+                <FeedCard key={review.id} review={review} currentUserId={userId} />
               ))
-            ))}
-        </View>
-      </ScrollView>
+            )
+          )}
 
+          {/* Gallery tab */}
+          {activeTab === 'gallery' && (
+            galleryPhotos.length === 0 ? (
+              <Text style={{ textAlign: 'center', color: Colors.textMuted, marginTop: 10, fontWeight: '700' }}>
+                Be the first to add a photo!
+              </Text>
+            ) : (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+                {galleryPhotos.map((uri: string, index: number) => (
+                  <Image
+                    key={index}
+                    source={{ uri }}
+                    style={{ width: '48.5%', height: 160, borderRadius: 10, borderWidth: 1, borderColor: Colors.border }}
+                    resizeMode="cover"
+                  />
+                ))}
+              </View>
+            )
+          )}
+        </View>
+
+      </ScrollView>
       <BottomNav activeTab="explore" />
     </SafeAreaView>
   );

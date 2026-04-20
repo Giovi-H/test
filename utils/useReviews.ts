@@ -12,7 +12,7 @@ export function useReviews(userId: string | number | null, refreshKey?: number) 
       const { data, error } = await supabase
         .from('reviews')
         .select(
-          'id, cafe_id, cafe_name, item_name, comments, drinks_rating, food_rating, vibe_rating, service_rating, photos'
+          'id, cafe_id, cafe_name, item_name, comments, drinks_rating, food_rating, vibe_rating, service_rating, photos, created_at'
         )
         .eq('user_id', userId)
         .order('created_at', { ascending: false });

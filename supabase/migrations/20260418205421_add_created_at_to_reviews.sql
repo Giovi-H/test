@@ -1,0 +1,1 @@
+ALTER TABLE reviews ADD COLUMN created_at timestamptz DEFAULT now();

@@ -19,6 +19,7 @@ import { useReviews } from 'utils/useReviews';
 import { supabase } from 'utils/supabase';
 import { Colors } from 'utils/colors';
 import { useRefresh } from 'utils/useRefresh';
+import { FeedCard } from 'components/pages/feed/FeedCard';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -26,19 +27,17 @@ export default function ProfilePage() {
   const [username, setUsername] = useState('');
   const [joinYear, setJoinYear] = useState('2025');
   const [suggestedUsers, setSuggestedUsers] = useState<any[]>([]);
+  const [corkTab, setCorkTab] = useState<'menu' | 'reviews' | 'photos'>('menu');
 
   const loadUsername = async () => {
     if (!userId) return;
     const { data } = await supabase
       .from('users')
-      .select('username, created_at')
+      .select('username')
       .eq('id', userId)
       .single();
     if (data) {
       setUsername(data.username);
-      if (data.created_at) {
-        setJoinYear(new Date(data.created_at).getFullYear().toString());
-      }
     }
   };
 
@@ -63,6 +62,7 @@ export default function ProfilePage() {
   const { reviews, photos, cafesVisited } = useReviews(userId, refreshKey);
 
   useEffect(() => {
+    if (!userId) return;
     loadUsername();
     loadSuggestedUsers();
   }, [userId]);
@@ -249,123 +249,146 @@ export default function ProfilePage() {
           </View>
         </View>
 
-        {/* Cork Board Section */}
+{/* Cork Board Section */}
+<View style={{
+  marginHorizontal: 16,
+  marginTop: 12,
+  marginBottom: 12,
+  borderRadius: 16,
+  overflow: 'hidden',
+  borderWidth: 0,
+}}>
+  <Image
+    source={require('../../../assets/corkboard.png')}
+    style={{ position: 'absolute', width: '100%', height: '100%' }}
+    resizeMode="cover"
+  />
+  <View style={{ padding: 16, minHeight: 400 }}>
+
+    {corkTab === 'menu' && (
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        {/* Menu list */}
         <View style={{
-          marginHorizontal: 16,
-          marginTop: 12,
-          borderRadius: 16,
-          overflow: 'hidden',
-          borderWidth: 0,
-          borderColor: '#c4a882',
+          flex: 1,
+          backgroundColor: 'rgba(255,255,255,0.85)',
+          borderRadius: 12,
+          padding: 12,
+          borderWidth: 1,
+          borderColor: '#ddd',
         }}>
-          <Image
-            source={require('../../../assets/corkboard.png')}
-            style={{
-              position: 'absolute',
-              width: '100%',
-              height: '100%',
-            }}
-            resizeMode="cover"
-          />
-          <View style={{ padding: 16, minHeight: 500 }}>
-
-            {/* White board decoration */}
-            <Image
-  source={require('../../../assets/whiteboard.png')}
-  style={{
-    width: '100%',
-    height: 80,
-    marginBottom: 12,
-    backgroundColor: 'transparent',
-  }}
-  resizeMode="contain"
-/>
-
-            {/* Top row: menu + specialty */}
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-
-              {/* Menu list */}
-              <View style={{
-                flex: 1,
-                backgroundColor: 'rgba(255,255,255,0.85)',
-                borderRadius: 12,
-                padding: 12,
-                borderWidth: 1,
-                borderColor: '#ddd',
-              }}>
-                <Text style={{
-                  fontWeight: '800',
-                  fontSize: 13,
-                  color: Colors.navy,
-                  marginBottom: 8,
-                  textAlign: 'center',
-                  letterSpacing: 0.5,
-                }}>
-                  {username?.toUpperCase()}'S MENU
-                </Text>
-                {menuItems.map((item, i) => (
-                  <Text key={item.id} style={{ fontSize: 11, color: '#333', marginBottom: 4 }}>
-                    {i + 1}. {item.name}{'\n'}
-                    <Text style={{ textDecorationLine: 'underline', color: Colors.blue }}>
-                      ({item.cafe})
-                    </Text>
-                  </Text>
-                ))}
-              </View>
-
-              {/* Right column: specialty + buttons */}
-              <View style={{ gap: 8, justifyContent: 'flex-start', minWidth: 110 }}>
-                {/* Cafe Specialty */}
-                <View style={{ borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: '#ddd' }}>
-                  <Image
-                    source={require('../../../assets/paper.png')}
-                    style={{ position: 'absolute', width: '100%', height: '100%' }}
-                    resizeMode="cover"
-                  />
-                  <View style={{ padding: 10, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 11, fontWeight: '800', color: Colors.navy, textAlign: 'center' }}>
-                      CAFE SPECIALTY:
-                    </Text>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.blue, marginTop: 2 }}>
-                      drinks
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Reviews button */}
-                <TouchableOpacity style={{
-                  backgroundColor: Colors.blue,
-                  borderRadius: 10,
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}>
-                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>reviews</Text>
-                  <Text style={{ fontSize: 14 }}>✏️</Text>
-                </TouchableOpacity>
-
-                {/* Photos button */}
-                <TouchableOpacity style={{
-                  backgroundColor: Colors.blue,
-                  borderRadius: 10,
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}>
-                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>photos</Text>
-                  <Text style={{ fontSize: 14 }}>📷</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
+          <Text style={{
+            fontWeight: '800', fontSize: 13, color: Colors.navy,
+            marginBottom: 8, textAlign: 'center', letterSpacing: 0.5,
+          }}>
+            {username?.toUpperCase()}'S MENU
+          </Text>
+          {menuItems.map((item, i) => (
+            <Text key={item.id} style={{ fontSize: 11, color: '#333', marginBottom: 4 }}>
+              {i + 1}. {item.name}{'\n'}
+              <Text style={{ textDecorationLine: 'underline', color: Colors.blue }}>
+                ({item.cafe})
+              </Text>
+            </Text>
+          ))}
         </View>
 
+        {/* Right column */}
+        <View style={{ gap: 8, justifyContent: 'flex-start', minWidth: 110 }}>
+          {/* Cafe Specialty */}
+          <View style={{ borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: '#ddd' }}>
+            <Image
+              source={require('../../../assets/paper.png')}
+              style={{ position: 'absolute', width: '100%', height: '100%' }}
+              resizeMode="cover"
+            />
+            <View style={{ padding: 10, alignItems: 'center' }}>
+              <Text style={{ fontSize: 11, fontWeight: '800', color: Colors.navy, textAlign: 'center' }}>
+                CAFE SPECIALTY:
+              </Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.blue, marginTop: 2 }}>
+                drinks
+              </Text>
+            </View>
+          </View>
+
+          {/* Reviews button */}
+          <TouchableOpacity
+            onPress={() => setCorkTab('reviews')}
+            style={{
+              backgroundColor: Colors.blue,
+              borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+            }}>
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>reviews</Text>
+            <Text style={{ fontSize: 14 }}>✏️</Text>
+          </TouchableOpacity>
+
+          {/* Photos button */}
+          <TouchableOpacity
+            onPress={() => setCorkTab('photos')}
+            style={{
+              backgroundColor: Colors.blue,
+              borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+            }}>
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>photos</Text>
+            <Text style={{ fontSize: 14 }}>📷</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    )}
+
+{corkTab === 'reviews' && (
+  <View>
+    <TouchableOpacity
+      onPress={() => setCorkTab('menu')}
+      style={{ marginBottom: 12, alignSelf: 'flex-start' }}>
+      <Text style={{ color: Colors.navy, fontWeight: '700', fontSize: 13 }}>← back</Text>
+    </TouchableOpacity>
+    {reviews.length === 0 ? (
+      <Text style={{ textAlign: 'center', color: Colors.textMuted, marginTop: 20 }}>
+        No reviews yet!
+      </Text>
+    ) : (
+      reviews.map((review) => (
+        <FeedCard
+          key={review.id}
+          review={{ ...review, users: { username, profile_image_url: null } }}
+          currentUserId={userId}
+        />
+      ))
+    )}
+  </View>
+)}
+
+    {corkTab === 'photos' && (
+      <View>
+        <TouchableOpacity
+          onPress={() => setCorkTab('menu')}
+          style={{ marginBottom: 12, alignSelf: 'flex-start' }}>
+          <Text style={{ color: Colors.navy, fontWeight: '700', fontSize: 13 }}>← back</Text>
+        </TouchableOpacity>
+        {photos.length === 0 ? (
+          <Text style={{ textAlign: 'center', color: Colors.textMuted, marginTop: 20 }}>
+            No photos yet!
+          </Text>
+        ) : (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+            {photos.map((uri, index) => (
+              <Image
+                key={index}
+                source={{ uri }}
+                style={{ width: '48%', height: 160, borderRadius: 10, borderWidth: 1, borderColor: '#ddd' }}
+                resizeMode="cover"
+              />
+            ))}
+          </View>
+        )}
+      </View>
+    )}
+
+  </View>
+</View>
       </ScrollView>
 
       <BottomNav activeTab="profile" />

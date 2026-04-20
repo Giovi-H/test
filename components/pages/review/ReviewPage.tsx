@@ -19,6 +19,8 @@ import { getNearbyCafes } from 'utils/foursquare';
 import * as FileSystem from 'expo-file-system/legacy';
 import { DEFAULT_LAT, DEFAULT_LNG } from 'utils/constants';
 import { ReviewStarRating } from './ReviewStarRating';
+import GridBackground from 'components/GridBackdrop';
+import CupLogo from 'components/pages/intro/StartHere/svgs/CupLogo';
 
 const VIBES = ['Studying', 'Dessert', 'Date', 'To Go', 'Lounging', 'Socializing', 'Work'];
 
@@ -43,8 +45,8 @@ export default function ReviewPage() {
   const [comments, setComments] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [itemName, setItemName] = useState('');
+  const [drinksExpanded, setDrinksExpanded] = useState(false);
 
-  // Search cafes as user types
   useEffect(() => {
     if (cafeSelected || !cafeName.trim()) {
       setCafeSearchResults([]);
@@ -119,17 +121,17 @@ export default function ReviewPage() {
   };
 
   const handleSubmit = async () => {
+    console.log('submitting', { userId, cafeName, selectedCafeId });
     if (!userId || !cafeName) {
       alert('Please enter a cafe name!');
       return;
     }
-
+    console.log('photos array:', photos);
     const uploadedPhotoUrls = await uploadPhotos();
-
+    console.log('uploaded photos:', uploadedPhotoUrls);
     if (uploadedPhotoUrls.length > 0 && selectedCafeId) {
       await updateCafeCoverPhoto(selectedCafeId, uploadedPhotoUrls[0]);
     }
-
     const { error } = await supabase.from('reviews').insert({
       user_id: userId,
       cafe_id: selectedCafeId || cafeName.toLowerCase().replace(/\s/g, '_'),
@@ -144,6 +146,7 @@ export default function ReviewPage() {
       photos: uploadedPhotoUrls,
     });
 
+    console.log('insert error:', error);
     if (error) {
       alert('Error submitting review: ' + error.message);
     } else {
@@ -154,279 +157,291 @@ export default function ReviewPage() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.blue }}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.blue} />
+      <GridBackground color1={Colors.blue} color2="#4b5a9c" />
+      <StatusBar barStyle="light-content" />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}>
+
         {/* Header */}
-        <View style={{ paddingHorizontal: 24, paddingTop: 40, paddingBottom: 10 }}>
-          <Text
-            style={{
-              fontSize: 45,
-              fontWeight: '900',
-              fontStyle: 'italic',
-              color: '#fff',
-              textTransform: 'uppercase',
-            }}>
-            SIP & SCORE ☕
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 24,
+          paddingTop: 40,
+          paddingBottom: 16,
+          gap: 12,
+        }}>
+          <Text style={{
+            fontSize: 36,
+            fontWeight: '900',
+            fontStyle: 'italic',
+            color: '#fff',
+            textTransform: 'uppercase',
+            flex: 1,
+          }}>
+            SIP &{'\n'}SCORE
           </Text>
+          <CupLogo />
         </View>
 
-        <View
-          style={{
-            backgroundColor: Colors.blue,
-            borderTopLeftRadius: 40,
-            borderTopRightRadius: 40,
-            padding: 24,
-            minHeight: 600,
+        {/* Search bar */}
+        <View style={{ paddingHorizontal: 16, marginBottom: 4 }}>
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: '#fff',
+            borderRadius: 100,
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            borderWidth: 1,
+            borderColor: Colors.border,
           }}>
-          {/* Search bar */}
-          <View>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: '#fff',
-                borderRadius: 100,
-                paddingHorizontal: 16,
-                paddingVertical: 10,
-                borderWidth: 1,
-                borderColor: Colors.border,
-                marginBottom: cafeSearchResults.length > 0 ? 0 : 30,
-              }}>
-              <Text style={{ fontSize: 16, marginRight: 8 }}>🔍</Text>
-              <TextInput
-                value={cafeName}
-                onChangeText={(text) => {
-                  setCafeName(text);
-                  setCafeSelected(false);
-                  setSelectedCafeId('');
-                }}
-                placeholder="What cafe did you visit?"
-                placeholderTextColor="#aaa"
-                style={{ flex: 1, fontSize: 14, color: Colors.navy }}
-              />
-              {cafeSelected && (
-                <TouchableOpacity
-                  onPress={() => {
-                    setCafeName('');
-                    setCafeSelected(false);
-                    setSelectedCafeId('');
-                  }}>
-                  <Text style={{ fontSize: 16, color: '#aaa' }}>✕</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {cafeSearchResults.length > 0 && (
-              <View
-                style={{
-                  backgroundColor: '#fff',
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: Colors.border,
-                  marginBottom: 30,
-                  overflow: 'hidden',
-                }}>
-                {cafeSearchResults.map((cafe, index) => (
-                  <TouchableOpacity
-                    key={cafe.fsq_place_id}
-                    onPress={() => selectCafe(cafe)}
-                    style={{
-                      paddingHorizontal: 16,
-                      paddingVertical: 12,
-                      borderBottomWidth: index < cafeSearchResults.length - 1 ? 1 : 0,
-                      borderBottomColor: Colors.border,
-                    }}>
-                    <Text style={{ fontWeight: '700', fontSize: 13, color: Colors.navy }}>
-                      {cafe.name}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: Colors.textMuted, marginTop: 2 }}>
-                      {cafe.location?.formatted_address}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
-
-          {/* Star ratings */}
-          <View
-            style={{
-              backgroundColor: '#fff',
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: Colors.border,
-              padding: 5,
-              marginBottom: 30,
-              marginTop: 10,
-              marginHorizontal: 25,
-            }}>
-            <ReviewStarRating label="DRINKS" rating={drinksRating} setRating={setDrinksRating} />
-            <ReviewStarRating label="FOOD" rating={foodRating} setRating={setFoodRating} />
-            <ReviewStarRating label="VIBE" rating={vibeRating} setRating={setVibeRating} />
-            <ReviewStarRating label="SERVICE" rating={serviceRating} setRating={setServiceRating} />
-          </View>
-
-          {/* Item name */}
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: '#fff',
-              borderRadius: 100,
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-              borderWidth: 1,
-              borderColor: Colors.border,
-              marginBottom: 20,
-            }}>
-            <Text style={{ fontSize: 16, marginRight: 8 }}>🍵</Text>
+            <Text style={{ fontSize: 16, marginRight: 8 }}>🔍</Text>
             <TextInput
-              value={itemName}
-              onChangeText={setItemName}
-              placeholder="What did you order?"
+              value={cafeName}
+              onChangeText={(text) => {
+                setCafeName(text);
+                setCafeSelected(false);
+                setSelectedCafeId('');
+              }}
+              placeholder="What cafe did you visit?"
               placeholderTextColor="#aaa"
               style={{ flex: 1, fontSize: 14, color: Colors.navy }}
             />
+            {cafeSelected && (
+              <TouchableOpacity onPress={() => {
+                setCafeName('');
+                setCafeSelected(false);
+                setSelectedCafeId('');
+              }}>
+                <Text style={{ fontSize: 16, color: '#aaa' }}>✕</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
-          {/* What's the move */}
-          <View style={{ marginBottom: 20, marginHorizontal: 40, width: '70%' }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                borderWidth: 1,
-                borderColor: Colors.border,
-                borderRadius: 100,
-                paddingHorizontal: 16,
-                paddingVertical: 10,
-                marginBottom: 12,
-                backgroundColor: '#fff',
-              }}>
-              <Text style={{ fontWeight: '700', fontSize: 13, color: Colors.navy, flex: 1 }}>
-                {"WHAT'S THE MOVE?"}
-              </Text>
-              <Text style={{ fontSize: 16 }}>⬇️</Text>
-            </View>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {VIBES.map((vibe) => (
+          {cafeSearchResults.length > 0 && (
+            <View style={{
+              backgroundColor: '#fff',
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: Colors.border,
+              marginTop: 4,
+              overflow: 'hidden',
+            }}>
+              {cafeSearchResults.map((cafe, index) => (
                 <TouchableOpacity
-                  key={vibe}
-                  onPress={() => toggleVibe(vibe)}
+                  key={cafe.fsq_place_id}
+                  onPress={() => selectCafe(cafe)}
                   style={{
-                    borderRadius: 100,
                     paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    borderWidth: 1,
-                    borderColor: Colors.navy,
-                    backgroundColor: selectedVibes.includes(vibe) ? Colors.navy : '#fff',
+                    paddingVertical: 12,
+                    borderBottomWidth: index < cafeSearchResults.length - 1 ? 1 : 0,
+                    borderBottomColor: Colors.border,
                   }}>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      color: selectedVibes.includes(vibe) ? '#fff' : Colors.navy,
-                      fontWeight: '500',
-                    }}>
-                    {vibe}
+                  <Text style={{ fontWeight: '700', fontSize: 13, color: Colors.navy }}>
+                    {cafe.name}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: Colors.textMuted, marginTop: 2 }}>
+                    {cafe.location?.formatted_address}
                   </Text>
                 </TouchableOpacity>
               ))}
-              <TouchableOpacity
-                style={{
-                  borderRadius: 100,
-                  width: 36,
-                  height: 36,
-                  backgroundColor: '#fff',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                <Text style={{ color: 'red', fontSize: 20, fontWeight: '600' }}>+</Text>
-              </TouchableOpacity>
             </View>
-          </View>
+          )}
+        </View>
 
-          {/* Comments */}
-          <View
-            style={{
-              backgroundColor: '#fff',
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: Colors.border,
-              padding: 16,
-              marginHorizontal: 30,
-              marginBottom: 16,
-            }}>
-            <TextInput
-              value={comments}
-              onChangeText={setComments}
-              placeholder="Anything comments about this visit?"
-              placeholderTextColor="#aaa"
-              multiline
-              numberOfLines={4}
-              style={{ fontSize: 14, color: Colors.navy, minHeight: 15 }}
-            />
-          </View>
-
-          {/* Add photos */}
-          <TouchableOpacity
-            onPress={pickPhoto}
-            style={{
-              backgroundColor: '#fff',
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: Colors.border,
-              padding: 16,
+        {/* Ratings card */}
+        <View style={{
+          backgroundColor: '#fff',
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: Colors.border,
+          padding: 12,
+          marginHorizontal: 16,
+          marginTop: 16,
+        }}>
+          <ReviewStarRating
+            label="DRINKS"
+            rating={drinksRating}
+            setRating={setDrinksRating}
+            showPlus
+            expanded={drinksExpanded}
+            onToggleExpand={() => setDrinksExpanded(!drinksExpanded)}
+          />
+          {drinksExpanded && (
+            <View style={{
               flexDirection: 'row',
               alignItems: 'center',
-              marginBottom: 24,
-              gap: 16,
+              backgroundColor: '#f9f9f9',
+              borderRadius: 100,
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderWidth: 1,
+              borderColor: Colors.border,
+              marginBottom: 8,
+              gap: 8,
             }}>
-            {photos.length > 0 ? (
-              <Image
-                source={{ uri: photos[0] }}
-                style={{ width: 80, height: 80, borderRadius: 12 }}
+              <TextInput
+                value={itemName}
+                onChangeText={setItemName}
+                placeholder="What did you drink?"
+                placeholderTextColor="#aaa"
+                style={{ flex: 1, fontSize: 13, color: Colors.navy }}
               />
-            ) : (
-              <View
+              <TouchableOpacity
+                onPress={() => setDrinksExpanded(false)}
                 style={{
-                  width: 80,
-                  height: 80,
+                  width: 24,
+                  height: 24,
                   borderRadius: 12,
-                  backgroundColor: Colors.border,
+                  backgroundColor: Colors.red,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
-                <Text style={{ fontSize: 30 }}>📷</Text>
-              </View>
-            )}
-            <View>
-              <Text style={{ fontWeight: '700', fontSize: 15, color: Colors.navy }}>
-                ADD YOUR PHOTOS!
-              </Text>
-              <Text style={{ fontSize: 12, color: Colors.textMuted, marginTop: 4 }}>
-                We would love to see the vibe
-              </Text>
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', lineHeight: 20 }}>−</Text>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-
-          {/* Submit button */}
-          <TouchableOpacity
-            onPress={handleSubmit}
-            style={{
-              backgroundColor: Colors.red,
-              borderRadius: 100,
-              paddingVertical: 16,
-              marginHorizontal: 70,
-              alignItems: 'center',
-            }}>
-            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 20, fontStyle: 'italic' }}>
-              {"Let's Sip It"}
-            </Text>
-          </TouchableOpacity>
+          )}
+          <ReviewStarRating label="FOOD" rating={foodRating} setRating={setFoodRating} />
+          <ReviewStarRating label="VIBE" rating={vibeRating} setRating={setVibeRating} />
+          <ReviewStarRating label="SERVICE" rating={serviceRating} setRating={setServiceRating} />
         </View>
+
+        {/* What's the move */}
+        <View style={{ marginHorizontal: 16, marginTop: 16 }}>
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: '#fff',
+            borderRadius: 100,
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            marginBottom: 12,
+            backgroundColor: '#fff',
+          }}>
+            <Text style={{ fontWeight: '700', fontSize: 13, color: Colors.navy, flex: 1 }}>
+              {"WHAT'S THE MOVE?"}
+            </Text>
+            <Text style={{ fontSize: 16 }}>⬇️</Text>
+          </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {VIBES.map((vibe) => (
+              <TouchableOpacity
+                key={vibe}
+                onPress={() => toggleVibe(vibe)}
+                style={{
+                  borderRadius: 100,
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderWidth: 1,
+                  borderColor: '#fff',
+                  backgroundColor: selectedVibes.includes(vibe) ? Colors.navy : '#fff',
+                }}>
+                <Text style={{
+                  fontSize: 13,
+                  color: selectedVibes.includes(vibe) ? '#fff' : Colors.navy,
+                  fontWeight: '500',
+                }}>
+                  {vibe}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={{
+              borderRadius: 100,
+              width: 36,
+              height: 36,
+              backgroundColor: '#fff',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Text style={{ color: 'red', fontSize: 20, fontWeight: '600' }}>+</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Comments */}
+        <View style={{
+          backgroundColor: '#fff',
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: Colors.border,
+          padding: 16,
+          marginHorizontal: 16,
+          marginTop: 16,
+        }}>
+          <TextInput
+            value={comments}
+            onChangeText={setComments}
+            placeholder="Any comments about this visit?"
+            placeholderTextColor="#aaa"
+            multiline
+            numberOfLines={4}
+            style={{ fontSize: 14, color: Colors.navy, minHeight: 60 }}
+          />
+        </View>
+
+        {/* Add photos */}
+        <TouchableOpacity
+          onPress={pickPhoto}
+          style={{
+            backgroundColor: '#fff',
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: Colors.border,
+            padding: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginHorizontal: 16,
+            marginTop: 16,
+            gap: 16,
+          }}>
+          {photos.length > 0 ? (
+  <Image
+    source={{ uri: photos[0] }}
+    style={{ width: 80, height: 80, borderRadius: 12 }}
+  />
+) : (
+  <View style={{
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    backgroundColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  }}>
+    <CupLogo />
+  </View>
+)}
+          <View>
+            <Text style={{ fontWeight: '700', fontSize: 15, color: Colors.navy }}>
+              ADD YOUR PHOTOS!
+            </Text>
+            <Text style={{ fontSize: 12, color: Colors.textMuted, marginTop: 4 }}>
+              We would love to see the vibe
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Submit */}
+        <TouchableOpacity
+          onPress={handleSubmit}
+          style={{
+            backgroundColor: Colors.red,
+            borderRadius: 100,
+            paddingVertical: 16,
+            marginHorizontal: 60,
+            marginTop: 24,
+            alignItems: 'center',
+          }}>
+          <Text style={{ color: '#fff', fontWeight: '900', fontSize: 20, fontStyle: 'italic' }}>
+            {"Let's Sip It"}
+          </Text>
+        </TouchableOpacity>
+
       </ScrollView>
 
       <BottomNav activeTab="add" backgroundColor={Colors.background} />
