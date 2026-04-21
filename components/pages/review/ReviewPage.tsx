@@ -46,6 +46,45 @@ export default function ReviewPage() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [itemName, setItemName] = useState('');
   const [drinksExpanded, setDrinksExpanded] = useState(false);
+  const [existingReviewId, setExistingReviewId] = useState<number | null>(null);
+  const [originalDate, setOriginalDate] = useState<string | null>(null);
+  const [updatedDate, setUpdatedDate] = useState<string | null>(null);
+
+  // Check for existing review when cafe is selected
+  useEffect(() => {
+    if (!userId || !prefilledCafeId) return;
+    const checkExisting = async () => {
+      const { data } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('cafe_id', prefilledCafeId)
+        .single();
+
+      if (data) {
+        setExistingReviewId(data.id);
+        setDrinksRating(data.drinks_rating ?? 0);
+        setFoodRating(data.food_rating ?? 0);
+        setVibeRating(data.vibe_rating ?? 0);
+        setServiceRating(data.service_rating ?? 0);
+        setSelectedVibes(data.vibes ?? []);
+        setComments(data.comments ?? '');
+        setItemName(data.item_name ?? '');
+        if (data.item_name) setDrinksExpanded(true);
+        if (data.created_at) {
+          setOriginalDate(new Date(data.created_at).toLocaleDateString('en-US', {
+            month: 'numeric', day: 'numeric', year: '2-digit'
+          }));
+        }
+        if (data.updated_at) {
+          setUpdatedDate(new Date(data.updated_at).toLocaleDateString('en-US', {
+            month: 'numeric', day: 'numeric', year: '2-digit'
+          }));
+        }
+      }
+    };
+    checkExisting();
+  }, [userId, prefilledCafeId]);
 
   useEffect(() => {
     if (cafeSelected || !cafeName.trim()) {
@@ -87,6 +126,10 @@ export default function ReviewPage() {
   const uploadPhotos = async (): Promise<string[]> => {
     const uploadedUrls: string[] = [];
     for (const uri of photos) {
+      if (uri.startsWith('http')) {
+        uploadedUrls.push(uri);
+        continue;
+      }
       const fileName = `${userId}_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
       const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
       const byteCharacters = atob(base64);
@@ -121,18 +164,18 @@ export default function ReviewPage() {
   };
 
   const handleSubmit = async () => {
-    console.log('submitting', { userId, cafeName, selectedCafeId });
     if (!userId || !cafeName) {
       alert('Please enter a cafe name!');
       return;
     }
-    console.log('photos array:', photos);
+
     const uploadedPhotoUrls = await uploadPhotos();
-    console.log('uploaded photos:', uploadedPhotoUrls);
+
     if (uploadedPhotoUrls.length > 0 && selectedCafeId) {
       await updateCafeCoverPhoto(selectedCafeId, uploadedPhotoUrls[0]);
     }
-    const { error } = await supabase.from('reviews').insert({
+
+    const reviewData = {
       user_id: userId,
       cafe_id: selectedCafeId || cafeName.toLowerCase().replace(/\s/g, '_'),
       cafe_name: cafeName,
@@ -144,14 +187,31 @@ export default function ReviewPage() {
       vibes: selectedVibes,
       comments: comments,
       photos: uploadedPhotoUrls,
-    });
+      updated_at: new Date().toISOString(),
+    };
 
-    console.log('insert error:', error);
+    let error;
+
+    if (existingReviewId) {
+      // Update existing review
+      const { error: updateError } = await supabase
+        .from('reviews')
+        .update(reviewData)
+        .eq('id', existingReviewId);
+      error = updateError;
+    } else {
+      // Insert new review
+      const { error: insertError } = await supabase
+        .from('reviews')
+        .insert(reviewData);
+      error = insertError;
+    }
+
     if (error) {
       alert('Error submitting review: ' + error.message);
     } else {
-      alert('Review submitted!');
-      router.push('/home');
+      alert(existingReviewId ? 'Review updated!' : 'Review submitted!');
+      router.push('/(tabs)');
     }
   };
 
@@ -186,6 +246,31 @@ export default function ReviewPage() {
           <CupLogo />
         </View>
 
+        {/* Existing review notice */}
+        {existingReviewId && (
+          <View style={{
+            backgroundColor: 'rgba(255,255,255,0.15)',
+            borderRadius: 12,
+            padding: 12,
+            marginHorizontal: 16,
+            marginBottom: 8,
+          }}>
+            <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>
+              ✏️ Updating your previous review
+            </Text>
+            {originalDate && (
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 4 }}>
+                Originally posted: {originalDate}
+              </Text>
+            )}
+            {updatedDate && (
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>
+                Last updated: {updatedDate}
+              </Text>
+            )}
+          </View>
+        )}
+
         {/* Search bar */}
         <View style={{ paddingHorizontal: 16, marginBottom: 4 }}>
           <View style={{
@@ -210,15 +295,15 @@ export default function ReviewPage() {
               placeholderTextColor="#aaa"
               style={{ flex: 1, fontSize: 14, color: Colors.navy }}
             />
-            {cafeSelected && (
-              <TouchableOpacity onPress={() => {
-                setCafeName('');
-                setCafeSelected(false);
-                setSelectedCafeId('');
-              }}>
-                <Text style={{ fontSize: 16, color: '#aaa' }}>✕</Text>
-              </TouchableOpacity>
-            )}
+            {cafeSelected && !prefilledCafeName && (
+  <TouchableOpacity onPress={() => {
+    setCafeName('');
+    setCafeSelected(false);
+    setSelectedCafeId('');
+  }}>
+    <Text style={{ fontSize: 16, color: '#aaa' }}>✕</Text>
+  </TouchableOpacity>
+)}
           </View>
 
           {cafeSearchResults.length > 0 && (
@@ -399,23 +484,23 @@ export default function ReviewPage() {
             gap: 16,
           }}>
           {photos.length > 0 ? (
-  <Image
-    source={{ uri: photos[0] }}
-    style={{ width: 80, height: 80, borderRadius: 12 }}
-  />
-) : (
-  <View style={{
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    backgroundColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  }}>
-    <CupLogo />
-  </View>
-)}
+            <Image
+              source={{ uri: photos[0] }}
+              style={{ width: 80, height: 80, borderRadius: 12 }}
+            />
+          ) : (
+            <View style={{
+              width: 80,
+              height: 80,
+              borderRadius: 12,
+              backgroundColor: Colors.border,
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+            }}>
+              <CupLogo />
+            </View>
+          )}
           <View>
             <Text style={{ fontWeight: '700', fontSize: 15, color: Colors.navy }}>
               ADD YOUR PHOTOS!
@@ -438,7 +523,7 @@ export default function ReviewPage() {
             alignItems: 'center',
           }}>
           <Text style={{ color: '#fff', fontWeight: '900', fontSize: 20, fontStyle: 'italic' }}>
-            {"Let's Sip It"}
+            {existingReviewId ? "Update Review" : "Let's Sip It"}
           </Text>
         </TouchableOpacity>
 

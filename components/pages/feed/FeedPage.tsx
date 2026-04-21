@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
 import { useProfile } from 'utils/ProfileContext';
 import GridBackground from 'components/GridBackdrop';
-import BottomNav from 'components/BottomNav';
 import { supabase } from 'utils/supabase';
 import { Colors } from 'utils/colors';
 import { FeedCard } from './FeedCard';
@@ -61,25 +60,23 @@ export default function FeedPage() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.background }}>
-      <GridBackground color1={Colors.background} color2={Colors.border} />
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
+        <GridBackground color1={Colors.background} color2={Colors.border} />
+        <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
 
-      {/* Header */}
-      <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 10 }}>
-        <Text
-          style={{
+        {/* Header */}
+        <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 10 }}>
+          <Text style={{
             fontSize: 28,
             fontWeight: '900',
             fontStyle: 'italic',
             color: Colors.navy,
           }}>
-          SOCIAL FEED
-        </Text>
-      </View>
+            SOCIAL FEED
+          </Text>
+        </View>
 
-      {/* Tabs */}
-      <View
-        style={{
+        {/* Tabs */}
+        <View style={{
           flexDirection: 'row',
           marginHorizontal: 16,
           marginBottom: 12,
@@ -89,61 +86,57 @@ export default function FeedPage() {
           borderColor: '#000',
           overflow: 'hidden',
         }}>
-        <TouchableOpacity
-          onPress={() => setActiveTab('following')}
-          style={{
-            flex: 1,
-            paddingVertical: 10,
-            alignItems: 'center',
-            backgroundColor: activeTab === 'following' ? Colors.navy : '#fff',
-          }}>
-          <Text
+          <TouchableOpacity
+            onPress={() => setActiveTab('following')}
             style={{
+              flex: 1,
+              paddingVertical: 10,
+              alignItems: 'center',
+              backgroundColor: activeTab === 'following' ? Colors.navy : '#fff',
+            }}>
+            <Text style={{
               fontSize: 13,
               fontWeight: '600',
               color: activeTab === 'following' ? '#fff' : '#555',
             }}>
-            following
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setActiveTab('global')}
-          style={{
-            flex: 1,
-            paddingVertical: 10,
-            alignItems: 'center',
-            backgroundColor: activeTab === 'global' ? Colors.navy : '#fff',
-          }}>
-          <Text
+              following
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setActiveTab('global')}
             style={{
+              flex: 1,
+              paddingVertical: 10,
+              alignItems: 'center',
+              backgroundColor: activeTab === 'global' ? Colors.navy : '#fff',
+            }}>
+            <Text style={{
               fontSize: 13,
               fontWeight: '600',
               color: activeTab === 'global' ? '#fff' : '#555',
             }}>
-            discover
-          </Text>
-        </TouchableOpacity>
-      </View>
+              discover
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100, paddingTop: 10 }}>
-        {loading ? (
-          <Text style={{ textAlign: 'center', color: Colors.textMuted, marginTop: 40 }}>
-            Loading...
-          </Text>
-        ) : feed.length === 0 ? (
-          <Text style={{ textAlign: 'center', color: Colors.textMuted, marginTop: 40 }}>
-            {activeTab === 'following' ? 'Follow someone to see their reviews!' : 'No reviews yet!'}
-          </Text>
-        ) : (
-          feed.map((review) => (
-            <FeedCard key={review.id} review={review} currentUserId={userId} />
-          ))
-        )}
-      </ScrollView>
-
-      <BottomNav activeTab="feed" />
-    </SafeAreaView>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100, paddingTop: 10 }}>
+          {loading ? (
+            <Text style={{ textAlign: 'center', color: Colors.textMuted, marginTop: 40 }}>
+              Loading...
+            </Text>
+          ) : feed.length === 0 ? (
+            <Text style={{ textAlign: 'center', color: Colors.textMuted, marginTop: 40 }}>
+              {activeTab === 'following' ? 'Follow someone to see their reviews!' : 'No reviews yet!'}
+            </Text>
+          ) : (
+            feed.map((review) => (
+              <FeedCard key={review.id} review={review} currentUserId={userId} />
+            ))
+          )}
+        </ScrollView>
+      </SafeAreaView>
   );
 }

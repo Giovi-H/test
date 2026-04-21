@@ -18,6 +18,7 @@ import { supabase } from 'utils/supabase';
 import { Colors } from 'utils/colors';
 import { FeedCard } from 'components/pages/feed/FeedCard';
 import GridBackground from 'components/GridBackdrop';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 export default function CafePage() {
@@ -30,6 +31,7 @@ export default function CafePage() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [avgRating, setAvgRating] = useState<number | null>(null);
+  const insets = useSafeAreaInsets();
 
   const loadCafe = async () => {
     if (!id) return;
@@ -161,8 +163,7 @@ export default function CafePage() {
         contentContainerStyle={{ paddingBottom: 100 }}>
   
         {/* Hero Image */}
-        <View style={{ height: 320, position: 'relative', backgroundColor: Colors.blue, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden', marginBottom: -5, zIndex: 1 }}>
-          {coverPhoto ? (
+        <View style={{ height: 260 + insets.top, position: 'relative', backgroundColor: Colors.blue, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden', marginBottom: -5, zIndex: 1 }}>          {coverPhoto ? (
             <Image
               source={{ uri: coverPhoto }}
               style={{ width: '100%', height: '100%' }}
@@ -175,21 +176,22 @@ export default function CafePage() {
           )}
   
           <TouchableOpacity
-            onPress={() => router.back()}
-            style={{
-              position: 'absolute', top: 16, left: 16,
-              backgroundColor: Colors.red,
-              borderRadius: 100, width: 36, height: 36,
-              alignItems: 'center', justifyContent: 'center', zIndex: 10,
-            }}>
-            <Text style={{ color: '#fff', fontSize: 18 }}>←</Text>
-          </TouchableOpacity>
-  
-          <TouchableOpacity
-            onPress={toggleSave}
-            style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
-            <Text style={{ fontSize: 24 }}>{saved ? '❤️' : '🤍'}</Text>
-          </TouchableOpacity>
+          onPress={() => router.back()}
+          style={{
+            position: 'absolute', top: insets.top + 8, left: 16,
+            backgroundColor: Colors.red,
+            borderRadius: 100, width: 36, height: 36,
+            alignItems: 'center', justifyContent: 'center', zIndex: 20,
+          }}>
+          <Text style={{ color: '#fff', fontSize: 18 }}>←</Text>
+        </TouchableOpacity>
+
+        {/* Heart — outside hero too */}
+        <TouchableOpacity
+          onPress={toggleSave}
+          style={{ position: 'absolute', top: insets.top + 220, right: 16, zIndex: 20 }}>
+          <Text style={{ fontSize: 24 }}>{saved ? '❤️' : '🤍'}</Text>
+        </TouchableOpacity>
   
           <View style={{ position: 'absolute', bottom: 12, left: 16, right: 16 }}>
             <Text style={{ color: '#fff', fontSize: 12, marginBottom: 2, opacity: 0.85 }}>

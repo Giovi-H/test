@@ -13,7 +13,6 @@ import BottomSheet from '@gorhom/bottom-sheet';
 import GridBackground from 'components/GridBackdrop';
 import { useProfile } from 'utils/ProfileContext';
 import { supabase } from 'utils/supabase';
-import BottomNav from 'components/BottomNav';
 import { useLocalSearchParams } from 'expo-router';
 import { useSavedCafes } from 'utils/useSavedCafes';
 import { useNearbyCafes } from 'utils/useNearbyCafes';
@@ -62,6 +61,7 @@ export default function ExplorePage() {
   const locationInputRef = useRef<TextInput>(null);
   const searchInputRef = useRef<TextInput>(null);
   const overlayAnim = useRef(new Animated.Value(0)).current;
+  const mapAnim = useRef(new Animated.Value(0)).current;
 
   const { nearbyCafes, loadingCafes } = useNearbyCafes(activeFilter, false, userId, searchCoords);
   const { savedCafes, toggleSave } = useSavedCafes(userId);
@@ -185,18 +185,23 @@ export default function ExplorePage() {
       setCommittedLocation(displayName.split(',')[0]);
       setLocationSuggestions([]);
       setLocationQuery(displayName.split(',')[0]);
+      mapAnim.setValue(0);
       setViewMode('map');
       closeOverlay();
+      Animated.timing(mapAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
       setTimeout(() => {
         mapRef.current?.animateToRegion(region, 600);
         bottomSheetRef.current?.snapToIndex(0);
       }, 300);
     },
-    [closeOverlay]
+    [closeOverlay, mapAnim]
   );
 
   const handleSearchBarPress = useCallback(() => {
-    console.log('search bar pressed, switching to map');
     commitLocation(40.7128, -74.006, 'NYC, NY');
   }, [commitLocation]);
 
@@ -299,77 +304,77 @@ export default function ExplorePage() {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <StatusBar barStyle="dark-content" />
 
-      {viewMode === 'map' && (
-        <ExploreMapView
-          mapRef={mapRef}
-          bottomSheetRef={bottomSheetRef}
-          mapRegion={mapRegion}
-          snapPoints={snapPoints}
-          nearbyCafes={nearbyCafes ?? []}
-          committedLocation={committedLocation}
-          selectedCafe={selectedCafe}
-          onDismissMiniCard={() => setSelectedCafe(null)}
-          selectedCafeCoverPhoto={selectedCafeCoverPhoto}
-          selectedCafeRating={selectedCafeRating}
-          onExitMap={exitMapView}
-          onPinPress={handlePinPress}
-          savedCafes={savedCafes}
-          onToggleSave={toggleSave}
-          search={search}
-          onSearchChange={setSearch}
-          onOpenOverlay={openOverlay}
-        />
-      )}
-
-      {viewMode === 'list' && (
-        <>
-          <GridBackground color1="#FFFFFF" color2={Colors.border} />
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            style={{ backgroundColor: 'transparent', flex: 1 }}
-            contentContainerStyle={{ paddingBottom: 120 }}
-          >
-            <CafeList
-              search={search}
-              onSearchChange={setSearch}
-              onOpenOverlay={handleSearchBarPress}
+        {viewMode === 'map' && (
+          <Animated.View style={{ flex: 1, opacity: mapAnim }}>
+            <ExploreMapView
+              mapRef={mapRef}
+              bottomSheetRef={bottomSheetRef}
+              mapRegion={mapRegion}
+              snapPoints={snapPoints}
+              nearbyCafes={nearbyCafes ?? []}
               committedLocation={committedLocation}
-              activeFilter={activeFilter}
-              onToggleFilter={toggleFilter}
-              loadingCafes={loadingCafes}
-              filteredCafes={filteredCafes}
+              selectedCafe={selectedCafe}
+              onDismissMiniCard={() => setSelectedCafe(null)}
+              selectedCafeCoverPhoto={selectedCafeCoverPhoto}
+              selectedCafeRating={selectedCafeRating}
+              onExitMap={exitMapView}
+              onPinPress={handlePinPress}
               savedCafes={savedCafes}
               onToggleSave={toggleSave}
+              search={search}
+              onSearchChange={setSearch}
+              onOpenOverlay={openOverlay}
             />
-            <UserResults
-              userResults={userResults}
-              followingIds={followingIds}
-              onToggleFollow={toggleFollow}
-            />
-          </ScrollView>
-        </>
-      )}
+          </Animated.View>
+        )}
 
-      <BottomNav activeTab="explore" />
+        {viewMode === 'list' && (
+          <>
+            <GridBackground color1="#FFFFFF" color2={Colors.border} />
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={{ backgroundColor: 'transparent', flex: 1 }}
+              contentContainerStyle={{ paddingBottom: 120 }}
+            >
+              <CafeList
+                search={search}
+                onSearchChange={setSearch}
+                onOpenOverlay={handleSearchBarPress}
+                committedLocation={committedLocation}
+                activeFilter={activeFilter}
+                onToggleFilter={toggleFilter}
+                loadingCafes={loadingCafes}
+                filteredCafes={filteredCafes}
+                savedCafes={savedCafes}
+                onToggleSave={toggleSave}
+              />
+              <UserResults
+                userResults={userResults}
+                followingIds={followingIds}
+                onToggleFollow={toggleFollow}
+              />
+            </ScrollView>
+          </>
+        )}
 
-      {overlayVisible && (
-        <SearchOverlay
-          overlayTranslateY={overlayTranslateY}
-          onClose={closeOverlay}
-          search={search}
-          onSearchChange={setSearch}
-          searchInputRef={searchInputRef}
-          locationQuery={locationQuery}
-          onLocationQueryChange={setLocationQuery}
-          locationInputRef={locationInputRef}
-          geocoding={geocoding}
-          loadingSuggestions={loadingSuggestions}
-          locationSuggestions={locationSuggestions}
-          onLocationSearch={handleLocationSearch}
-          onSuggestionPress={handleSuggestionPress}
-          onCurrentLocation={handleCurrentLocation}
-        />
-      )}
+        {overlayVisible && (
+          <SearchOverlay
+            overlayTranslateY={overlayTranslateY}
+            onClose={closeOverlay}
+            search={search}
+            onSearchChange={setSearch}
+            searchInputRef={searchInputRef}
+            locationQuery={locationQuery}
+            onLocationQueryChange={setLocationQuery}
+            locationInputRef={locationInputRef}
+            geocoding={geocoding}
+            loadingSuggestions={loadingSuggestions}
+            locationSuggestions={locationSuggestions}
+            onLocationSearch={handleLocationSearch}
+            onSuggestionPress={handleSuggestionPress}
+            onCurrentLocation={handleCurrentLocation}
+          />
+        )}
     </SafeAreaView>
   );
 }

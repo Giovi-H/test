@@ -6,7 +6,6 @@ import { useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useProfile } from 'utils/ProfileContext';
 
-
 function AppContent() {
   const { setUserId } = useProfile();
 
@@ -27,12 +26,15 @@ function AppContent() {
         animation: 'slide_from_right',
         animationDuration: 200,
         contentStyle: { backgroundColor: '#F5F5F5' },
+        gestureEnabled: true,
       }}>
-      <Stack.Screen name="home/index" options={{ animation: 'none' }} />
-      <Stack.Screen name="explore/index" options={{ animation: 'none' }} />
-      <Stack.Screen name="feed/index" options={{ animation: 'none' }} />
-      <Stack.Screen name="profile/index" options={{ animation: 'none' }} />
+      <Stack.Screen name="(tabs)" options={{ animation: 'none', gestureEnabled: false }} />
+      <Stack.Screen name="cafe/[id]" options={{ gestureEnabled: true, animation: 'slide_from_right' }} />
       <Stack.Screen name="review/index" options={{ animation: 'none' }} />
+      <Stack.Screen name="settings/index" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="followers/[id]" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="user/[id]" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="profile/edit" options={{ animation: 'slide_from_right' }} />
     </Stack>
   );
 }

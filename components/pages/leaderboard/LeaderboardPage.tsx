@@ -12,7 +12,6 @@ import { useRouter } from 'expo-router';
 import { supabase } from 'utils/supabase';
 import { Colors } from 'utils/colors';
 import { useProfile } from 'utils/ProfileContext';
-import BottomNav from 'components/BottomNav';
 import GridBackground from 'components/GridBackdrop';
 
 type LeaderboardEntry = {
@@ -41,7 +40,6 @@ export default function LeaderboardPage() {
         return;
       }
 
-      // Count reviews per user
       const counts: Record<number, LeaderboardEntry> = {};
       data?.forEach((r: any) => {
         const user = r.users;
@@ -66,76 +64,70 @@ export default function LeaderboardPage() {
   }, []);
 
   const medalColor = (index: number) => {
-    if (index === 0) return '#FFD700'; // gold
-    if (index === 1) return '#C0C0C0'; // silver
-    if (index === 2) return '#CD7F32'; // bronze
+    if (index === 0) return '#FFD700';
+    if (index === 1) return '#C0C0C0';
+    if (index === 2) return '#CD7F32';
     return Colors.textMuted;
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <GridBackground color1="#FFFFFF" color2={Colors.border} />
-      <StatusBar barStyle="dark-content" />
+        <GridBackground color1="#FFFFFF" color2={Colors.border} />
+        <StatusBar barStyle="dark-content" />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* Header */}
-        <View style={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>
-          <Text
-            style={{
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 120 }}>
+          <View style={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>
+            <Text style={{
               fontSize: 28,
               fontWeight: '900',
               fontStyle: 'italic',
               color: Colors.navy,
             }}>
-            LEADERBOARD
-          </Text>
-          <Text style={{ fontSize: 13, color: Colors.textMuted, marginTop: 4 }}>
-            Most Sip & Score reviews
-          </Text>
-        </View>
+              LEADERBOARD
+            </Text>
+            <Text style={{ fontSize: 13, color: Colors.textMuted, marginTop: 4 }}>
+              Most Sip & Score reviews
+            </Text>
+          </View>
 
-        {loading ? (
-          <Text style={{ textAlign: 'center', color: Colors.textMuted, marginTop: 40 }}>
-            Loading...
-          </Text>
-        ) : (
-          <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
-            {entries.map((entry, index) => (
-              <TouchableOpacity
-                key={entry.id}
-                onPress={() =>
-                  router.push(
-                    Number(entry.id) === Number(userId) ? '/profile' : `/user/${entry.id}`
-                  )
-                }
-                style={{
-                  backgroundColor: '#fff',
-                  borderRadius: 14,
-                  marginBottom: 10,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  borderWidth: 1,
-                  borderColor: index < 3 ? medalColor(index) : '#000',
-                  paddingHorizontal: 16,
-                  paddingVertical: 12,
-                  gap: 12,
-                }}>
-                {/* Rank */}
-                <Text
+          {loading ? (
+            <Text style={{ textAlign: 'center', color: Colors.textMuted, marginTop: 40 }}>
+              Loading...
+            </Text>
+          ) : (
+            <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
+              {entries.map((entry, index) => (
+                <TouchableOpacity
+                  key={entry.id}
+                  onPress={() =>
+                    router.push(
+                      Number(entry.id) === Number(userId) ? '/profile' : `/user/${entry.id}`
+                    )
+                  }
                   style={{
+                    backgroundColor: '#fff',
+                    borderRadius: 14,
+                    marginBottom: 10,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: index < 3 ? medalColor(index) : '#000',
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    gap: 12,
+                  }}>
+                  <Text style={{
                     fontSize: 16,
                     fontWeight: '900',
                     color: medalColor(index),
                     width: 28,
                   }}>
-                  #{index + 1}
-                </Text>
+                    #{index + 1}
+                  </Text>
 
-                {/* Avatar */}
-                <View
-                  style={{
+                  <View style={{
                     width: 40,
                     height: 40,
                     borderRadius: 20,
@@ -146,54 +138,47 @@ export default function LeaderboardPage() {
                     borderColor: '#000',
                     overflow: 'hidden',
                   }}>
-                  {entry.profile_image_url ? (
-                    <Image
-                      source={{ uri: entry.profile_image_url }}
-                      style={{ width: '100%', height: '100%' }}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <Text style={{ fontWeight: '700', fontSize: 14, color: Colors.navy }}>
-                      {entry.username?.[0]?.toUpperCase()}
-                    </Text>
-                  )}
-                </View>
+                    {entry.profile_image_url ? (
+                      <Image
+                        source={{ uri: entry.profile_image_url }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Text style={{ fontWeight: '700', fontSize: 14, color: Colors.navy }}>
+                        {entry.username?.[0]?.toUpperCase()}
+                      </Text>
+                    )}
+                  </View>
 
-                {/* Username */}
-                <Text
-                  style={{
+                  <Text style={{
                     flex: 1,
                     fontWeight: '700',
                     fontSize: 14,
                     color: Colors.navy,
                   }}>
-                  {entry.username}
-                </Text>
+                    {entry.username}
+                  </Text>
 
-                {/* Review count */}
-                <View
-                  style={{
+                  <View style={{
                     backgroundColor: index < 3 ? medalColor(index) : Colors.border,
                     borderRadius: 100,
                     paddingHorizontal: 12,
                     paddingVertical: 4,
                   }}>
-                  <Text
-                    style={{
+                    <Text style={{
                       fontSize: 12,
                       fontWeight: '700',
                       color: index < 3 ? '#fff' : Colors.navy,
                     }}>
-                    {entry.review_count} reviews
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </ScrollView>
-
-      <BottomNav activeTab="leaderboard" />
-    </SafeAreaView>
+                      {entry.review_count} reviews
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </SafeAreaView>
   );
 }

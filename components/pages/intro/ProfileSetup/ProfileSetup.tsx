@@ -85,7 +85,7 @@ export default function ProfileSetup() {
       console.log('Profile and preferences saved successfully!');
       setUserId(data.id);
       await AsyncStorage.setItem('userId', String(data.id));
-      router.push('/home');
+      router.push('/(tabs)');
     }
   };
 

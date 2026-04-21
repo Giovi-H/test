@@ -4,18 +4,25 @@ import { useRouter } from 'expo-router';
 import { useProfile } from 'utils/ProfileContext';
 import { Colors } from 'utils/colors';
 
+type TabName = 'home' | 'explore' | 'leaderboard' | 'feed' | 'profile' | 'add';
+
 type Props = {
-  activeTab?: 'home' | 'explore' | 'leaderboard' | 'feed' | 'profile' | 'add';
+  activeTab?: TabName;
   backgroundColor?: string;
+  onTabPress?: (tab: TabName) => void;
 };
 
-export default function BottomNav({ activeTab, backgroundColor = Colors.blue }: Props) {
+export default function BottomNav({ activeTab, backgroundColor = Colors.blue, onTabPress }: Props) {
   const router = useRouter();
   const { profileImage } = useProfile();
 
-  const navigate = (tab: string, path: string) => {
+  const navigate = (tab: TabName, path: string) => {
     if (activeTab === tab) return;
-    router.replace(path as any);
+    if (onTabPress) {
+      onTabPress(tab);
+    } else {
+      router.replace(path as any);
+    }
   };
 
   return (
